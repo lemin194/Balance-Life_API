@@ -65,7 +65,7 @@ class NutrientInstance(models.Model):
     food = models.ForeignKey(Food, on_delete=models.CASCADE)
 
     def __str__(self):
-        return f'{self.nutrient.name} - amount: {self.amount}'
+        return f'{self.nutrient.name}'
 
 
 class FoodInstance(models.Model):
@@ -73,4 +73,4 @@ class FoodInstance(models.Model):
     amount = models.IntegerField(default=100)
     meal = models.ForeignKey(Meal, on_delete=models.CASCADE)
     def __str__(self):
-        return self.food_name
+        return self.food.food_name
