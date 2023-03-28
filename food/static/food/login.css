@@ -1,0 +1,86 @@
+body {
+    background-color: #f2f2f2;
+    margin: 0;
+  }
+  
+  h1 {
+    font-family: Arial, sans-serif;
+    color: #333333;
+    text-align: center;
+    margin-top: 30px;
+  }
+  
+  h2 {
+    font-family: Arial, sans-serif;
+    color: #333333;
+  }
+  
+  .title-bar {
+    background-color: #007BFF;
+    color: white;
+    padding: 10px;
+    font-size: 24px;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  
+  .form-container {
+    width: 400px;
+    margin: 90px auto 0 auto;
+    padding: 20px;
+    background-color: #ffffff;
+    border: 1px solid #cccccc;
+    border-radius: 5px;
+    box-shadow: 0px 0px 10px #cccccc;
+  }
+  
+  label {
+    display: inline-block;
+    font-family: Arial, sans-serif;
+    font-size: 16px;
+    color: #333333;
+    margin-bottom: 10px;
+  }
+  
+  input[type="text"], input[type="password"] {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    font-family: Arial, sans-serif;
+    font-size: 16px;
+    border: 1px solid #cccccc;
+    border-radius: 5px;
+    box-sizing: border-box;
+    margin-bottom: 20px;
+  }
+  
+  input[type="submit"] {
+    background-color: #007BFF;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    margin: auto;
+    display: block;
+  }
+  
+  input[type="submit"]:hover {
+    background-color: #007BFF;
+  }
+  
+  .registration-line {
+    text-align: center;
+    margin-top: 20px;
+  }
+  
+  .registration-line a {
+    color: #007BFF;
+    text-decoration: none;
+    font-weight: bold;
+  }
+  
+  .registration-line a:hover {
+    text-decoration: underline;
+  }

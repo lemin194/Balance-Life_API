@@ -15,8 +15,8 @@ class FoodInstanceInline(admin.TabularInline):
 
 
 class NutrientAdmin(admin.ModelAdmin):
-    list_display = ('name', 'rda', 'required', 'category')
-    search_fields = ['name', 'category']
+    list_display = ('nutrient_name', 'rda', 'required', 'category')
+    search_fields = ['nutrient_name', 'category']
     list_filter = ['_category__category_name']
 
 class NutrientCategoryAdmin(admin.ModelAdmin):
@@ -26,7 +26,7 @@ class NutrientCategoryAdmin(admin.ModelAdmin):
 class FoodAdmin(admin.ModelAdmin):
     inlines = [NutrientInstanceInline]
     list_display = ('food_name', 'calories', 'proteins', 'fat', 'carbohydrates')
-    search_fields = ['name']
+    search_fields = ['nutrient_name']
     list_filter = ['food_name', 'calories', 'proteins', 'fat', 'carbohydrates']
 
 class MealAdmin(admin.ModelAdmin):

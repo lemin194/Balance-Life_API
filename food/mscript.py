@@ -1,6 +1,15 @@
 from .models import Food, FoodInstance, Meal, Nutrient, NutrientInstance, NutrientCategory
 import json
-import django.db.utils
+
+
+def create_foodinstances_from_food_set(food_set, meal):
+    for food in food_set:
+        foodinstance=FoodInstance.objects.create(
+            food=Food.objects.get(food_name=food['food_name']),
+            meal=meal,
+            amount=food['amount']
+        )
+
 
 
 def create_nutrientcategory(name):
@@ -18,19 +27,19 @@ def delete_nutrientcategory(name):
         print(NutrientCategory.objects.all())
 
 def create_nutrient(name):
-    if (Nutrient.objects.filter(name=name).exists()):
+    if (Nutrient.objects.filter(nutrient_name=name).exists()):
         print(name, "is already exist.")
     else:
-        c = Nutrient(name=name)
+        c = Nutrient(nutrient_name=name)
         return c
 
 def delete_nutrient(name):
     if (name == '__all__') :
         Nutrient.objects.all().delete()
-    elif (not Nutrient.objects.filter(name=name).exists()):
+    elif (not Nutrient.objects.filter(nutrient_name=name).exists()):
         print(name, "doesn't exist.")
     else:
-        Nutrient.objects.filter(name=name).delete()
+        Nutrient.objects.filter(nutrient_name=name).delete()
         print(Nutrient.objects.all())
 
 def load_nutrients_from_file(path=''):
@@ -38,29 +47,22 @@ def load_nutrients_from_file(path=''):
         path = 'data/nutrients.json'
     f = open(path)
     data = json.load(f)
+    response = ""
     for d in data:
-        if (Nutrient.objects.all().filter(name=d['name']).exists()):
-            print("%s is already exist." % d['name'])
-        else:
+        if (not Nutrient.objects.all().filter(nutrient_name=d['name']).exists()):
             if (not NutrientCategory.objects.filter(category_name=d['type']).exists()):
                 c = NutrientCategory(
                     category_name=d['type']
                 )
                 c.save()
             n = Nutrient(
-                name=d['name'],
+                nutrient_name=d['name'],
                 rda =d['rda'],
                 wiki=d['wiki'],
                 required=d['required'],
                 category=d['type'],
             )
             n.save()
-        # print('name:', d['name'])
-        # print('rda:', d['rda'])
-        # print('wiki:', d['wiki'])
-        # print('required:', d['required'])
-        # print('type:', d['type'])
-        # print()
 
 
 def load_foods_from_file(path=''):
@@ -70,10 +72,7 @@ def load_foods_from_file(path=''):
     mfile = open(path)
     data = json.load(mfile)
     for d in data:
-        print('Loading %s...' % d['name'])
-        if (Food.objects.all().filter(food_name=d['name']).exists()):
-            print("%s is already exist." % d['name'])
-        else:
+        if (not Food.objects.all().filter(food_name=d['name']).exists()):
             f = Food()
             f.food_name = d['name']
             f.fat = d['fat']
@@ -84,7 +83,7 @@ def load_foods_from_file(path=''):
             f.save()
             for name in d['nutrients']:
                 try:
-                    n = Nutrient.objects.get(name=name)
+                    n = Nutrient.objects.get(nutrient_name=name)
                     nInstance = NutrientInstance()
                     nInstance.nutrient = n
                     nInstance.food = f
@@ -98,3 +97,42 @@ def load_foods_from_file(path=''):
                     print(d['nutrients'][name])
 
 
+
+def food_instance_list_to_json(filist):
+    mlist = []
+    for fi in filist:
+        fidict = {}
+        fidict['food_id'] = fi.food.id
+        fidict['meal_id'] = fi.meal.id
+        fidict['amount'] = fi.amount
+        mlist.append(fidict)
+    
+    return json.dumps(mlist)
+
+def food_list_to_json(flist):
+    fdict = {}
+    for f in flist:
+        fdict[f.id] = f.food_name
+    
+    return json.dumps(fdict)
+
+
+def json_to_food_instance_list(mjson):
+    mlistjson = json.loads(mjson)
+    filist = []
+    for fidict in mlistjson:
+        fi = FoodInstance()
+        fi.food = Food.objects.get(id=fidict['food_id'])
+        fi.meal = Meal.objects.get(id=fidict['meal_id'])
+        fi.amount = fidict['amount']
+        filist.append(f)
+    return filist
+
+    
+def json_to_food_list(mjson):
+    mdictjson = json.loads(mjson)
+    flist = []
+    for fid in mlistjson:
+        f = Food().objects.get(id=fid)
+        flist.append(f)
+    return flist

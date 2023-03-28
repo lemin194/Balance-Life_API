@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    {%load static%}
+    <title>Sign Up</title>
+    <link rel="stylesheet" href="{% static 'food/style.css' %}"/>
+    <link rel="stylesheet" href="{% static 'food/login.css' %}"/>
+  </head>
+  <body>
+    <div class="form-container">
+      <div class="title-bar">
+        Balance Life App
+      </div>
+      <form method="POST">
+        {% csrf_token %}
+        {{form.as_p}}
+        <input type="submit" value="Sign Up">
+      </form>
+      <div class="registration-line">
+        Already have an account? <a href="{% url 'login' %}">Sign In</a>
+      </div>
+    </div>
+  </body>
+  
+</html>
