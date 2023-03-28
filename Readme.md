@@ -9,8 +9,7 @@
 
 ```
     python -m venv project_env
-```
-```
+    
     project_env\Scripts\activate.bat
 ```
 4. Install requirements.
@@ -21,8 +20,7 @@
 5. Setup database:
 ```
     python manage.py makemigrations
-```
-```
+    
     python manage.py migrate
 ```
 6. Run server
