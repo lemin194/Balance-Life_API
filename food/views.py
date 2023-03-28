@@ -265,28 +265,6 @@ def serialize_food(food : Food):
 
 
 
-# def get_food_render_data(food, show_details=False):
-#     serializer = FoodSerializer(food)
-#     render_data = serializer.data
-#     if (not show_details):
-#         return render_data
-#     render_data['nutrient_set'] = []
-#     nutrientinstance_list = list(food.nutrientinstance_set.all())
-#     for ni in nutrientinstance_list:
-#         nidict = {
-#             "name": ni.nutrient.nutrient_name,
-#             "amount": ni.amount
-#         }
-#         render_data['nutrient_set'].append(nidict)
-
-#     return render_data
-# def get_foods_render_data(foods, show_details=False):
-#     render_data = []
-#     for food in foods:
-#         render_data.append(get_food_render_data(food, show_details=show_details))
-#     return render_data
-
-
 
 
 def get_food_render_data(food, show_details=False):
@@ -311,50 +289,6 @@ def get_foods_render_data(foods, show_details=False):
     for food in foods:
         render_data.append(get_food_render_data(food, show_details=show_details))
     return render_data
-
-
-# def get_meals_render_data(meals, show_details=False, show_total=False):
-
-#     render_data = []
-#     total_amount = {}
-#     nutrients = Nutrient.objects.all()
-#     for nutrient in nutrients:
-#         total_amount[nutrient.nutrient_name] = { "amount": 0, "percentage": 0 }
-
-#     for meal in meals:
-#         serializer = MealSerializer(meal)
-#         meal_data = serializer.data
-#         meal_data['food_set'] = []
-#         foodinstance_list = list(meal.foodinstance_set.all())
-#         for fi in foodinstance_list:
-#             fidict = {
-#                 "food_name": fi.food.food_name,
-#                 "amount": fi.amount
-#             }
-#             if (show_details or show_total):
-#                 food_data = get_food_render_data(fi.food, show_details=True)
-#                 for key in ["fat", "calories", "proteins", "carbohydrates"]:
-#                     food_data[key] = float(food_data[key]) * float(fi.amount) / 100
-#                 for i in range(len(food_data["nutrient_set"])):
-#                     nutrient_name = food_data["nutrient_set"][i]["name"]
-#                     food_data["nutrient_set"][i]["amount"] = \
-#                         float(food_data["nutrient_set"][i]["amount"]) * float(fi.amount) / 100
-#                     food_data["nutrient_set"][i]["percentage"] = \
-#                         float(food_data["nutrient_set"][i]["amount"]) / float(nutrients.get(nutrient_name=nutrient_name).rda) * 10000
-                    
-#                     total_amount[nutrient_name]["amount"] += food_data["nutrient_set"][i]["amount"]
-#                     total_amount[nutrient_name]["percentage"] += food_data["nutrient_set"][i]["percentage"]
-#                 if (show_details):
-#                     fidict.update(food_data)
-#             meal_data['food_set'].append(fidict)
-#         render_data.append(meal_data)
-#     if (show_total):
-#         total_amount_response_data = []
-#         for key in total_amount:
-#             tadict = {"name": key, "amount": total_amount[key]["amount"], "percentage": total_amount[key]["percentage"]}
-#             total_amount_response_data.append(tadict)
-#         render_data.append({'total_amount': total_amount_response_data})
-#     return render_data
 
 def get_meals_render_data(meals, show_details=False, show_total=False):
 
