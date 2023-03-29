@@ -101,7 +101,7 @@ void login() async {
 
 4. Load foods and nutrients.
 
-Send a GET request to localhost:8000/load_data/ to load nutrients and foods database.
+* Send a GET request to localhost:8000/load_data/ to load nutrients and foods database.
 
 5. Example fetching food data.
 ```
