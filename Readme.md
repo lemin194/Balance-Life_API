@@ -37,7 +37,7 @@ Simple API for keeping track of food and daily meal data.
 ```
     python manage.py runserver
 ```
-7. Go to http://127.0.0.1:8000/load_data/ to prepare nutrients and foods database.
+7. Send a GET request to http://127.0.0.1:8000/load_data/ to load nutrients and foods database.
 ## How to use (in Dart)
 1. Run server.
 ```
