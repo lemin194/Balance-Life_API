@@ -7,14 +7,18 @@ from django.views.generic.edit import CreateView, DeleteView, UpdateView, FormVi
 from django.contrib.auth.views import LoginView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth import login, authenticate, get_user_model
+from django.contrib.auth import login, logout, authenticate, get_user_model
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework import generics, permissions
 from rest_framework.response import Response
+
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.authtoken.models import Token
 
 from django.utils import timezone
 from datetime import datetime, timedelta, time
@@ -29,6 +33,14 @@ from .mscript import *
 @api_view(['GET'])
 def getRoutes(request):
     routes = [
+        {
+            "Endpoint": "/api-token-auth/",
+            "method": "POST",
+            "body": {
+                "username": "",
+                "password": ""
+            }
+        },
         {
             "Endpoint": "/accounts/login/",
             "method": "POST",
@@ -89,12 +101,16 @@ def getRoutes(request):
         {
             "Endpoint": "/foods/",
             "method": "GET",
-            "body": None,
+            "body": {
+                "show_details": False,
+            },
         },
         {
             "Endpoint": "/foods/id/",
             "method": "GET",
-            "body": None,
+            "body": {
+                "show_details": False,
+            },
         },
         
         
@@ -169,18 +185,22 @@ def getRoutes(request):
     ]
     return Response(routes)
 
-# @api_view(['POST'])
-# def login_view(request):
-#     data = request.data
-#     username = data['username']
-#     password = data['password']
+@api_view(['POST'])
+def login_view(request):
+    data = request.data
+    username = data['username']
+    password = data['password']
 
-#     user = authenticate(request, username=username, password=password)
-#     if user != None:
-#         login(request, user)
-#         return Response({"message": "User logged in."})
-#     else:
-#         return Response({"message":"Log in failed."})
+    user = authenticate(request, username=username, password=password)
+    if user is not None:
+        login(request, user)
+        token = Token.objects.get(user=user).key
+        return Response({
+            "message": "User %s logged in." % user.username,
+            "token": token
+            })
+    else:
+        return Response({"message":"Log in failed."})
 
 @api_view(['POST'])
 def register_view(request):
@@ -189,11 +209,24 @@ def register_view(request):
     password = data['password']
     User = get_user_model()
     if User.objects.filter(username=username).count():
-        return Response({"message:", "Username is already taken."})
+        return Response({"message": "Username is already taken."})
     user = User.objects.create_user(username=username, password=password)
     user.save()
-    return Response({"message": "User registered."})
+    
+    token = Token.objects.get(user=user).key
+    return Response({
+        "message": "User %s registered." % username,
+        "token": token
+    })
 
+
+@api_view(['POST'])
+def logout_view(request):
+    user = request.user
+    if (user is None):
+        return Response({"message": "No user logged in."})
+    logout(request)
+    return Response({"message": "Logged out."})
 @api_view(['GET'])
 def user_profile_view(request):
     user = request.user
@@ -336,7 +369,7 @@ def get_meals_render_data(meals, show_details=False, show_total=False):
     return render_data
 
 
-@api_view(['GET'])
+@api_view(['GET', 'POST'])
 def getFoods(request):
     foods = Food.objects.all()
     
@@ -345,7 +378,7 @@ def getFoods(request):
     return Response(get_foods_render_data(list(foods), show_details=show_details))
 
 
-@api_view(['GET'])
+@api_view(['GET', 'POST'])
 def getFood(request, pk):
     food = Food.objects.get(id=pk)
 
@@ -355,26 +388,28 @@ def getFood(request, pk):
 
 
 
-@api_view(['GET'])
+@api_view(['GET', 'POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
 def getMeals(request):
-    if (not request.user.is_authenticated):
-        message = {'message': 'User is not logged in.'}
-        return Response(message)
+    token = request.META.get("HTTP_AUTHORIZATION").split(' ')[1]
+    user = Token.objects.get(key=token).user
 
     data = request.data
     show_details = data.setdefault('show_details', False)
     show_total = data.setdefault('show_total', False)
-    meals = Meal.objects.filter(user=request.user)
+    meals = Meal.objects.filter(user=user)
     render_data = get_meals_render_data(list(meals), show_details=show_details, show_total=show_total)
 
     return Response(render_data)
 
 
-@api_view(['GET'])
+@api_view(['GET', 'POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
 def getMealsByDate(request):
-    if (not request.user.is_authenticated):
-        message = {'message': 'User is not logged in.'}
-        return Response(message)
+    token = request.META.get("HTTP_AUTHORIZATION").split(' ')[1]
+    user = Token.objects.get(key=token).user
 
     data = request.data
     show_details = data.setdefault('show_details', False)
@@ -384,17 +419,18 @@ def getMealsByDate(request):
     tomorrow = today + timedelta(days=1)
     time_start = datetime.combine(today, time())
     time_end = datetime.combine(tomorrow, time())
-    meals = Meal.objects.filter(user=request.user, time__gte=time_start, time__lte=time_end)
+    meals = Meal.objects.filter(user=user, time__gte=time_start, time__lte=time_end)
     render_data = get_meals_render_data(list(meals), show_details=show_details, show_total=show_total)
 
     return Response(render_data)
 
 
-@api_view(['GET'])
+@api_view(['GET', 'POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
 def getMealsByWeek(request):
-    if (not request.user.is_authenticated):
-        message = {'message': 'User is not logged in.'}
-        return Response(message)
+    token = request.META.get("HTTP_AUTHORIZATION").split(' ')[1]
+    user = Token.objects.get(key=token).user
 
     data = request.data
     show_details = data.setdefault('show_details', False)
@@ -402,20 +438,22 @@ def getMealsByWeek(request):
     date = data.setdefault('date', timezone.now())
     time_start = datetime.combine(date.date() - timedelta(days=date.weekday()), time())
     time_end = datetime.combine(time_start + timedelta(days=7), time())
-    meals = Meal.objects.filter(user=request.user, time__gte=time_start, time__lte=time_end)
+    meals = Meal.objects.filter(user=user, time__gte=time_start, time__lte=time_end)
     render_data = get_meals_render_data(list(meals), show_details=show_details, show_total=show_total)
 
     return Response(render_data)
 
 
-@api_view(['GET'])
+@api_view(['GET', 'POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
 def getMeal(request, pk):
-    if (not request.user.is_authenticated):
-        message = {'message': 'User is not logged in.'}
-        return Response(message)
+    token = request.META.get("HTTP_AUTHORIZATION").split(' ')[1]
+    user = Token.objects.get(key=token).user
+    
 
     meal = Meal.objects.get(id=pk)
-    if (meal.user != request.user):
+    if (meal.user != user):
         message = {'message': 'User is not authenticated for this data.'}
         return Response(message)
 
@@ -438,15 +476,17 @@ def getMeal(request, pk):
 
 
 @api_view(['POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
 def createMeal(request):
-    if (not request.user.is_authenticated):
-        message = {'message': 'User is not logged in.'}
-        return Response(message)
+    token = request.META.get("HTTP_AUTHORIZATION").split(' ')[1]
+    user = Token.objects.get(key=token).user
+
     data = request.data
     meal = Meal.objects.create(
         title = data['title'], 
         time = data['time'], 
-        user = request.user
+        user = user
     )
 
     create_foodinstances_from_food_set(data['food_set'], meal)
@@ -455,14 +495,15 @@ def createMeal(request):
 
 
 @api_view(['PUT'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
 def updateMeal(request, pk):
-    if (not request.user.is_authenticated):
-        message = {'message': 'User is not logged in.'}
-        return Response(message)
+    token = request.META.get("HTTP_AUTHORIZATION").split(' ')[1]
+    user = Token.objects.get(key=token).user
 
     meal = Meal.objects.get(id=pk)
-    if (meal.user != request.user):
-        message = {'message': 'User is not authenticated for this data.'}
+    if (meal.user != user):
+        message = {'message': 'User is not authenticated for this action.'}
         return Response(message)
 
     data = request.data
@@ -478,14 +519,15 @@ def updateMeal(request, pk):
     return Response(get_meals_render_data([meal]))
 
 @api_view(['DELETE'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
 def deleteMeal(request, pk):
-    if (not request.user.is_authenticated):
-        message = {'message': 'User is not logged in.'}
-        return Response(message)
+    token = request.META.get("HTTP_AUTHORIZATION").split(' ')[1]
+    user = Token.objects.get(key=token).user
 
     meal = Meal.objects.get(id=pk)
-    if (meal.user != request.user):
-        message = {'message': 'User is not authenticated for this data.'}
+    if (meal.user != user):
+        message = {'message': 'User is not authenticated for this action.'}
         return Response(message)
 
     meal.delete()
