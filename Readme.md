@@ -51,7 +51,7 @@ import 'package:http/http.dart';
 ```
 
 3. Register, login.
-* Register and login request will return a token if succeed, the token will be used for later on authentication.
+* Register and login request will return a token if succeed, the token will be used for later authentication.
 #### Register
 ```
 void register() async {
