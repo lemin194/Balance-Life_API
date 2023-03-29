@@ -37,7 +37,6 @@ Simple API for keeping track of food and daily meal data.
 ```
     python manage.py runserver
 ```
-7. Send a GET request to http://127.0.0.1:8000/load_data/ to load nutrients and foods database.
 ## How to use (in Dart)
 1. Run server.
 ```
@@ -100,7 +99,10 @@ void login() async {
 }
 ```
 
-4. Example fetching food data.
+4. Load foods and nutrients.
+Send a GET request to localhost:8000/load_data/ to load nutrients and foods database.
+
+5. Example fetching food data.
 ```
 void getFoods() async {
     final url = 'localhost:8000';
