@@ -32,10 +32,6 @@
 
 ## API Reference
 
-#### CSRF Token
-For every request that requires a CSRF Token, they are provided in that page's cookies.
-You need to include CSRF Token in the http header.
-
 #### Routes
 Go to http://127.0.0.1:8000/ to see all routes available.
 
