@@ -26,6 +26,9 @@ Simple API for keeping track of food and daily meal data.
 ```
     pip install -r requirements.txt
 ```
+```
+    pip install -U channels["daphne"]
+```
 5. Setup database:
 ```
     python manage.py makemigrations
