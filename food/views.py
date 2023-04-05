@@ -118,6 +118,7 @@ def getRoutes(request):
             "Endpoint": "/meals/",
             "method": "GET",
             "body": {
+                "user_id" : 0,
                 "show_details": False,
                 "show_total": False,
             },
@@ -126,6 +127,7 @@ def getRoutes(request):
             "Endpoint": "/meals/bydate/",
             "method": "GET",
             "body": {
+                "user_id" : 0,
                 "show_details": False,
                 "show_total": False,
                 "time": "",
@@ -135,6 +137,7 @@ def getRoutes(request):
             "Endpoint": "/meals/byweek/",
             "method": "GET",
             "body": {
+                "user_id" : 0,
                 "show_details": False,
                 "show_total": False,
                 "time": "",
@@ -144,6 +147,7 @@ def getRoutes(request):
             "Endpoint": "/meals/id/",
             "method": "GET",
             "body": {
+                "user_id" : 0,
                 "show_details": False,
                 "show_total": False,
             },
@@ -152,6 +156,7 @@ def getRoutes(request):
             "Endpoint": "/meals/create/",
             "method": "POST",
             "body": {
+                "user_id" : 0,
                 "title": "",
                 "time" : "",
                 "food_set": [
@@ -166,6 +171,7 @@ def getRoutes(request):
             "Endpoint": "/meals/id/update/",
             "method": "PUT",
             "body": {
+                "user_id" : 0,
                 "title": "",
                 "time" : "",
                 "food_set": [
@@ -179,7 +185,9 @@ def getRoutes(request):
         {
             "Endpoint": "/meals/id/delete/",
             "method": "DELETE",
-            "body": None,
+            "body": {
+                "user_id" : 0,
+            },
         },
 
     ]
@@ -193,30 +201,30 @@ def login_view(request):
 
     user = authenticate(request, username=username, password=password)
     if user is not None:
-        login(request, user)
-        token = Token.objects.get(user=user).key
+        # login(request, user)
         return Response({
             "message": "User %s logged in." % user.username,
-            "token": token
+            "user_id": user.id
             })
     else:
-        return Response({"message":"Log in failed."})
+        return Response({"error":"Username or password is invalid."})
 
 @api_view(['POST'])
 def register_view(request):
     data = request.data
     username = data['username']
     password = data['password']
+    if (username == '' or username == None or password == '' or password == None):
+        return Response({"error": "Both username and password field is required."})
+
     User = get_user_model()
     if User.objects.filter(username=username).count():
-        return Response({"message": "Username is already taken."})
+        return Response({"error": "Username is already taken."})
     user = User.objects.create_user(username=username, password=password)
     user.save()
-    
-    token = Token.objects.get(user=user).key
     return Response({
         "message": "User %s registered." % username,
-        "token": token
+        "user_id": user.id
     })
 
 
@@ -229,7 +237,7 @@ def logout_view(request):
     return Response({"message": "Logged out."})
 @api_view(['GET'])
 def user_profile_view(request):
-    user = request.user
+    user = User.objects.get(id = request.data['user_id'])
     if not user.is_authenticated:
         return Response("Anonymous User")
     serializer = UserSerializer(user, many=False)
@@ -389,11 +397,9 @@ def getFood(request, pk):
 
 
 @api_view(['GET', 'POST'])
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
 def getMeals(request):
-    token = request.META.get("HTTP_AUTHORIZATION").split(' ')[1]
-    user = Token.objects.get(key=token).user
+    userid = request.data['user_id']
+    user = User.objects.get(id = userid)
 
     data = request.data
     show_details = data.setdefault('show_details', False)
@@ -405,11 +411,9 @@ def getMeals(request):
 
 
 @api_view(['GET', 'POST'])
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
 def getMealsByDate(request):
-    token = request.META.get("HTTP_AUTHORIZATION").split(' ')[1]
-    user = Token.objects.get(key=token).user
+    userid = request.data['user_id']
+    user = User.objects.get(id = userid)
 
     data = request.data
     show_details = data.setdefault('show_details', False)
@@ -426,11 +430,9 @@ def getMealsByDate(request):
 
 
 @api_view(['GET', 'POST'])
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
 def getMealsByWeek(request):
-    token = request.META.get("HTTP_AUTHORIZATION").split(' ')[1]
-    user = Token.objects.get(key=token).user
+    userid = request.data['user_id']
+    user = User.objects.get(id = userid)
 
     data = request.data
     show_details = data.setdefault('show_details', False)
@@ -445,11 +447,9 @@ def getMealsByWeek(request):
 
 
 @api_view(['GET', 'POST'])
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
 def getMeal(request, pk):
-    token = request.META.get("HTTP_AUTHORIZATION").split(' ')[1]
-    user = Token.objects.get(key=token).user
+    userid = request.data['user_id']
+    user = User.objects.get(id = userid)
     
 
     meal = Meal.objects.get(id=pk)
@@ -476,11 +476,9 @@ def getMeal(request, pk):
 
 
 @api_view(['POST'])
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
 def createMeal(request):
-    token = request.META.get("HTTP_AUTHORIZATION").split(' ')[1]
-    user = Token.objects.get(key=token).user
+    userid = request.data['user_id']
+    user = User.objects.get(id = userid)
 
     data = request.data
     meal = Meal.objects.create(
@@ -495,11 +493,9 @@ def createMeal(request):
 
 
 @api_view(['PUT'])
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
 def updateMeal(request, pk):
-    token = request.META.get("HTTP_AUTHORIZATION").split(' ')[1]
-    user = Token.objects.get(key=token).user
+    userid = request.data['user_id']
+    user = User.objects.get(id = userid)
 
     meal = Meal.objects.get(id=pk)
     if (meal.user != user):
@@ -519,11 +515,9 @@ def updateMeal(request, pk):
     return Response(get_meals_render_data([meal]))
 
 @api_view(['DELETE'])
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
 def deleteMeal(request, pk):
-    token = request.META.get("HTTP_AUTHORIZATION").split(' ')[1]
-    user = Token.objects.get(key=token).user
+    userid = request.data['user_id']
+    user = User.objects.get(id = userid)
 
     meal = Meal.objects.get(id=pk)
     if (meal.user != user):
@@ -532,4 +526,4 @@ def deleteMeal(request, pk):
 
     meal.delete()
 
-    return Response("Meal was deleted")
+    return Response( { 'message' : "Meal was deleted."} )

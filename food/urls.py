@@ -8,7 +8,7 @@ from rest_framework.authtoken import views as rest_view
 urlpatterns = [
     path('accounts/profile/', views.user_profile_view, name='user_profile'),
     path('accounts/register/', views.register_view, name='register'),
-    # path('accounts/login/', views.login_view, name="login"),
+    path('accounts/login/', views.login_view, name="login"),
     path('accounts/logout/', views.logout_view, name='logout'),
     path('load_data/', views.loadData, name='load_data'),
     path('load_foods_data/', views.loadFoodsData, name='load_foods'),
@@ -29,5 +29,5 @@ urlpatterns = [
 
 
 urlpatterns += [
-    path('accounts/login/', rest_view.obtain_auth_token),
+    # path('accounts/login/', rest_view.obtain_auth_token),
 ]
