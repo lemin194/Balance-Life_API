@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from django.http import HttpResponseRedirect, JsonResponse
+from django.http import HttpResponseRedirect, JsonResponse, HttpResponseBadRequest
 from django.views.generic.list import ListView
 from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, DeleteView, UpdateView, FormView
@@ -275,7 +275,7 @@ def login_view(request):
             "user_id": user.id
             })
     else:
-        return Response({"error":"Username or password is invalid."})
+        return HttpResponseBadRequest("Username or password is invalid.")
 
 @api_view(['POST'])
 def register_view(request):
@@ -283,11 +283,11 @@ def register_view(request):
     username = data['username']
     password = data['password']
     if (not username or not password):
-        return Response({"error": "Both username and password field is required."})
+        return HttpResponseBadRequest("Both username and password field is required.")
 
     User = get_user_model()
     if User.objects.filter(username=username).count():
-        return Response({"error": "Username is already taken."})
+        return HttpResponseBadRequest("Username is already taken.")
     user = User.objects.create_user(username=username, password=password)
     user.save()
     return Response({
@@ -644,7 +644,9 @@ def getIngredient(request, pk):
 @api_view(['GET', 'POST'])
 def getMeals(request):
     data = request.data
-    user_id = data['user_id']
+    user_id = data.setdefault('user_id', -1)
+    if (not User.objects.filter(id=user_id).exists()):
+        return HttpResponseBadRequest("Invalid user_id.")
     user = User.objects.get(id = user_id)
 
     data = request.data
@@ -660,7 +662,9 @@ def getMeals(request):
 @api_view(['GET', 'POST'])
 def getMealsByDate(request):
     data = request.data
-    user_id = data['user_id']
+    user_id = data.setdefault('user_id', -1)
+    if (not User.objects.filter(id=user_id).exists()):
+        return HttpResponseBadRequest("Invalid user_id.")
     user = User.objects.get(id = user_id)
 
     data = request.data
@@ -680,7 +684,9 @@ def getMealsByDate(request):
 @api_view(['GET', 'POST'])
 def getMealsByWeek(request):
     data = request.data
-    user_id = data['user_id']
+    user_id = data.setdefault('user_id', -1)
+    if (not User.objects.filter(id=user_id).exists()):
+        return HttpResponseBadRequest("Invalid user_id.")
     user = User.objects.get(id = user_id)
 
     data = request.data
@@ -721,7 +727,10 @@ def getMeal(request, pk):
 
 @api_view(['POST'])
 def createMeal(request):
-    user_id = request.data['user_id']
+    data = request.data
+    user_id = data.setdefault('user_id', -1)
+    if (not User.objects.filter(id=user_id).exists()):
+        return HttpResponseBadRequest("Invalid user_id.")
     user = User.objects.get(id = user_id)
 
     data = request.data
@@ -762,6 +771,8 @@ def updateMeal(request, pk):
 
 @api_view(['DELETE'])
 def deleteMeal(request, pk):
+    if not Meal.objects.filter(id=pk).exists():
+        return HttpResponseBadRequest("Meal is not exist.")
     meal = Meal.objects.get(id=pk)
     meal.delete()
 
