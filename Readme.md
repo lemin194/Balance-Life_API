@@ -26,6 +26,9 @@ Simple API for keeping track of food and daily meal data.
 ```
     pip install -r requirements.txt
 ```
+```
+    pip install -U channels["daphne"]
+```
 5. Setup database:
 ```
     python manage.py makemigrations
@@ -50,7 +53,7 @@ import 'package:http/http.dart';
 ```
 
 3. Register, login.
-* Register and login request will return a token if succeed, the token will be used for later authentication.
+* Register and login request will return an user id if succeed.
 #### Register
 ```
 void register() async {
@@ -91,8 +94,7 @@ void login() async {
         );
 
         final data = jsonDecode(response.body);
-        token = data["token"]; // User token which will be used for accessing personal data.
-        debugPrint('Token ${token}\n');
+        user_id = data["user_id"]; // User id which will be used for accessing personal data.
     } catch (e) {
         debugPrint(e.toString());
     }
@@ -108,9 +110,7 @@ void login() async {
 void getFoods() async {
     final url = 'localhost:8000';
     final headers = {
-        'Content-type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': 'Token ${token}', // Insert personal token to header
+        'Content-type': 'application/json'
     };
     try {
         final response = await http.post(Uri.http(url, '/foods/'),
