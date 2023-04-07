@@ -1,4 +1,4 @@
-from .models import Food, FoodInstance, Meal, Nutrient, NutrientInstance, NutrientCategory
+from .models import Food, FoodInstance, Meal, Ingredient, IngredientInstance, Nutrient, NutrientInstance
 import json
 
 from django.contrib.auth.models import User
@@ -20,59 +20,93 @@ def get_all_logged_in_users():
 
 
 
-def create_foodinstances_from_food_set(food_set, meal):
-    for food in food_set:
-        foodinstance=FoodInstance.objects.create(
-            food=Food.objects.get(food_name=food['food_name']),
-            meal=meal,
-            amount=food['amount']
-        )
+
+
+nutrient_dict_by_id = {}
+nutrient_dict_by_name = {}
+ingredient_dict_by_id = {}
+ingredient_object_dict_by_name = {}
+food_dict_by_id = {}
+food_dict_by_name = {}
+
+def get_food_dict_by_id(update=False):
+    global food_dict_by_id
+    if (not food_dict_by_id or update):
+        food_dict_by_id = {}
+        for food in Food.objects.all():
+            food_dict_by_id[food.id] = food
+    return food_dict_by_id
+    
+
+def get_food_dict_by_name(update=False):
+    global food_dict_by_name
+    if (not food_dict_by_name or update):
+        food_dict_by_name = {}
+        for food in Food.objects.all():
+            food_dict_by_name[food.food_name] = food
+    return food_dict_by_name
+
+def get_nutrient_dict_by_name():
+    global nutrient_dict_by_name
+    if (not nutrient_dict_by_name):
+        nutrient_dict_by_name = {}
+        for n in Nutrient.objects.all():
+            nutrient_dict_by_name[n.nutrient_name] = n
+
+    
+    return nutrient_dict_by_name
 
 
 
-def create_nutrientcategory(name):
-    if (NutrientCategory.objects.filter(category_name=name).exists()):
-        print(name, "is already exist.")
-    else:
-        c = NutrientCategory(category_name=name)
-        return c
+def get_nutrient_dict_by_id():
+    global nutrient_dict_by_id
+    if (not nutrient_dict_by_id):
+        nutrient_dict_by_id = {}
+        for n in Nutrient.objects.all():
+            nutrient_dict_by_id[n.id] = n
+    return nutrient_dict_by_id
 
-def delete_nutrientcategory(name):
-    if (not NutrientCategory.objects.filter(category_name=name).exists()):
-        print(name, "doesn't exist.")
-    else:
-        NutrientCategory.objects.filter(category_name=name).delete()
-        print(NutrientCategory.objects.all())
 
-def create_nutrient(name):
-    if (Nutrient.objects.filter(nutrient_name=name).exists()):
-        print(name, "is already exist.")
-    else:
-        c = Nutrient(nutrient_name=name)
-        return c
+def get_ingredient_dict_by_id():
+    global ingredient_dict_by_id
+    if (not ingredient_dict_by_id):
+        ingredient_dict_by_id = {}
+        for ingredient in Ingredient.objects.all():
+            ingredient_dict_element = {
+                "id": ingredient.id,
+                "ingredient_name": ingredient.ingredient_name,
+                "fat": ingredient.fat,
+                "calories": ingredient.calories,
+                "proteins": ingredient.proteins,
+                "carbohydrates": ingredient.carbohydrates,
+                "serving": ingredient.serving,
+            }
+            ingredient_dict_element["nutrient_set"] = {}
+            nutrient_dict = get_nutrient_dict_by_id()
+            for n in ingredient.nutrientinstance_set.values_list():
+                nutrient_name = nutrient_dict[n[2]].nutrient_name
+                ingredient_dict_element["nutrient_set"][nutrient_name] = n[1] #amount
+            ingredient_dict_by_id[ingredient.id] = ingredient_dict_element
 
-def delete_nutrient(name):
-    if (name == '__all__') :
-        Nutrient.objects.all().delete()
-    elif (not Nutrient.objects.filter(nutrient_name=name).exists()):
-        print(name, "doesn't exist.")
-    else:
-        Nutrient.objects.filter(nutrient_name=name).delete()
-        print(Nutrient.objects.all())
+    return ingredient_dict_by_id
+
+def get_ingredient_object_dict_by_name():
+    global ingredient_object_dict_by_name
+    if (not ingredient_object_dict_by_name):
+        for ingredient in Ingredient.objects.all():
+            ingredient_object_dict_by_name[ingredient.ingredient_name] = ingredient
+    return ingredient_object_dict_by_name
 
 def load_nutrients_from_file(path=''):
     if (path == ''):
         path = 'data/nutrients.json'
     f = open(path)
     data = json.load(f)
-    response = ""
+    nutrient_name_set = set()
+    for n in Nutrient.objects.all():
+        nutrient_name_set.add(n.nutrient_name)
     for d in data:
-        if (not Nutrient.objects.all().filter(nutrient_name=d['name']).exists()):
-            if (not NutrientCategory.objects.filter(category_name=d['type']).exists()):
-                c = NutrientCategory(
-                    category_name=d['type']
-                )
-                c.save()
+        if (not d['name'] in nutrient_name_set):
             n = Nutrient(
                 nutrient_name=d['name'],
                 rda =d['rda'],
@@ -83,28 +117,31 @@ def load_nutrients_from_file(path=''):
             n.save()
 
 
-def load_foods_from_file(path=''):
+def load_ingredients_from_file(path=''):
     if (path == ''):
         path = 'data/foods.json'
 
     mfile = open(path)
     data = json.load(mfile)
+    ingredient_name_set = set()
+    for ingr in Ingredient.objects.all():
+        ingredient_name_set.add(ingr.ingredient_name)
+    nutrient_dict = get_nutrient_dict_by_name()
     for d in data:
-        if (not Food.objects.all().filter(food_name=d['name']).exists()):
-            f = Food()
-            f.food_name = d['name']
-            f.fat = d['fat']
-            f.calories = d['calories']
-            f.proteins = d['proteins']
-            f.carbohydrates = d['carbohydrates']
-            f.serving = d['serving']
-            f.save()
+        if (not d['name'] in ingredient_name_set):
+            ingr = Ingredient()
+            ingr.ingredient_name = d['name']
+            ingr.fat = d['fat']
+            ingr.calories = d['calories']
+            ingr.proteins = d['proteins']
+            ingr.carbohydrates = d['carbohydrates']
+            ingr.serving = d['serving']
+            ingr.save()
             for name in d['nutrients']:
                 try:
-                    n = Nutrient.objects.get(nutrient_name=name)
                     nInstance = NutrientInstance()
-                    nInstance.nutrient = n
-                    nInstance.food = f
+                    nInstance.nutrient = nutrient_dict[name]
+                    nInstance.ingredient = ingr
                     if (d['nutrients'][name] == None):
                         nInstance.amount = 0
                     else:
@@ -113,44 +150,3 @@ def load_foods_from_file(path=''):
                 except django.db.utils.IntegrityError:
                     print(name + ' from ' + d['name'], "has an IntegrityError!")
                     print(d['nutrients'][name])
-
-
-
-def food_instance_list_to_json(filist):
-    mlist = []
-    for fi in filist:
-        fidict = {}
-        fidict['food_id'] = fi.food.id
-        fidict['meal_id'] = fi.meal.id
-        fidict['amount'] = fi.amount
-        mlist.append(fidict)
-    
-    return json.dumps(mlist)
-
-def food_list_to_json(flist):
-    fdict = {}
-    for f in flist:
-        fdict[f.id] = f.food_name
-    
-    return json.dumps(fdict)
-
-
-def json_to_food_instance_list(mjson):
-    mlistjson = json.loads(mjson)
-    filist = []
-    for fidict in mlistjson:
-        fi = FoodInstance()
-        fi.food = Food.objects.get(id=fidict['food_id'])
-        fi.meal = Meal.objects.get(id=fidict['meal_id'])
-        fi.amount = fidict['amount']
-        filist.append(f)
-    return filist
-
-    
-def json_to_food_list(mjson):
-    mdictjson = json.loads(mjson)
-    flist = []
-    for fid in mlistjson:
-        f = Food().objects.get(id=fid)
-        flist.append(f)
-    return flist

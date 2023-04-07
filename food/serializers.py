@@ -24,6 +24,11 @@ class NutrientSerializer(ModelSerializer):
     class Meta:
         model = Nutrient
         fields = '__all__'
+
+class IngredientSerializer(ModelSerializer):
+    class Meta:
+        model = Ingredient
+        fields = '__all__'
         
 class FoodSerializer(ModelSerializer):
     class Meta:
