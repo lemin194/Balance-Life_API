@@ -73,7 +73,7 @@ Explain:
 2. Import http package.
 * Installation: https://pub.dev/packages/http/install
 ```
-import 'dart:convert';
+import 'dart:convert'; // for json encode and decode.
 import 'package:http/http.dart' as http;
 ```
 
