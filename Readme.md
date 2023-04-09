@@ -1,5 +1,5 @@
 
-# Balance App API
+# Foodtracking App API
 
 A simple foodtracking API, for school project.
 
@@ -68,16 +68,13 @@ Explain:
 * "PUT" request is for updating an item. For example: sending a PUT request to endpoint /meals/5/update/ to perform an update on the meal object with the id = 5.
 * "DELETE" request is for deleting an item. For example: sending a DELETE request to endpoint /meals/5/delete/ will delete the meal with id = 5 if exists (if doesn't exist it will response with a Bad Request)
 * Every endpoints can be seen at 127.0.0.1:8000/
-*
-* There is an endpoint at /load_data/, which will load the ingredients and nutrients data with the 
 
     
 2. Import http package.
 * Installation: https://pub.dev/packages/http/install
 ```
-import 'dart:convert';
+import 'dart:convert'; // for json encode and decode.
 import 'package:http/http.dart' as http;
-import 'package:http/http.dart';
 ```
 
 3. Register, login.
