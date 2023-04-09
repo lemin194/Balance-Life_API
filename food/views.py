@@ -73,6 +73,12 @@ def getRoutes(request):
             "body": None,
             "description": "Load nutrients and ingredients from json file to database."
         },
+        {
+            "Endpoint": "/load_sample_foods_data/",
+            "method": ["GET"],
+            "body": None,
+            "description": "Load 5 example foods to database."
+        },
 
 
         {
@@ -332,6 +338,119 @@ def loadIngredientsData(request):
     return Response(serializer.data)
 
 @api_view(['GET'])
+def loadSampleFoodsData(request):
+    load_nutrients_from_file()
+    load_ingredients_from_file()
+    sample_data = \
+    [
+        {
+            "food_name": "Egg fried rice",
+            "ingredient_set": [
+                {
+                    "ingredient_name": "Egg",
+                    "amount": 240.0,
+                },
+                {
+                    "ingredient_name": "Olive oil",
+                    "amount": 65.0,
+                },
+                {
+                    "ingredient_name": "Onion",
+                    "amount": 50.0,
+                },
+                {
+                    "ingredient_name": "Rice brown",
+                    "amount": 250.0,
+                }
+            ]
+        },
+        {
+            "food_name": "Omelet",
+            "ingredient_set": [
+                {
+                    "ingredient_name": "Butter",
+                    "amount": 50.0,
+                },
+                {
+                    "ingredient_name": "Egg",
+                    "amount": 180.0,
+                }
+            ]
+        },
+        {
+            "food_name": "Air Fryer Beef & Broccoli",
+            "ingredient_set": [
+                {
+                    "ingredient_name": "Beef",
+                    "amount": 453.0,
+                },
+                {
+                    "ingredient_name": "Broccoli",
+                    "amount": 340.0,
+                },
+                {
+                    "ingredient_name": "Garlic",
+                    "amount": 16.0,
+                },
+                {
+                    "ingredient_name": "Ginger",
+                    "amount": 12.0,
+                },
+                {
+                    "ingredient_name": "Wine red",
+                    "amount": 11.8,
+                }
+            ]
+        },
+        {
+            "food_name": "Beef Wellington",
+            "ingredient_set": [
+                {
+                    "ingredient_name": "Beef",
+                    "amount": 907.2,
+                },
+                {
+                    "ingredient_name": "Butter",
+                    "amount": 17.0,
+                },
+                {
+                    "ingredient_name": "Egg",
+                    "amount": 80.0,
+                },
+                {
+                    "ingredient_name": "Pepper",
+                    "amount": 20.0,
+                }
+            ]
+        },
+        {
+            "food_name": "Grandma's Apple Pie",
+            "ingredient_set": [
+                {
+                    "ingredient_name": "Apples",
+                    "amount": 400.0,
+                },
+                {
+                    "ingredient_name": "Butter",
+                    "amount": 64.72,
+                }
+            ]
+        }
+    ]
+    ingredient_dict = get_ingredient_object_dict_by_name()
+    for fdata in sample_data:
+        if (Food.objects.filter(food_name=fdata['food_name']).exists()):
+            continue
+        food = Food.objects.create(food_name=fdata['food_name'])
+        for isdata in fdata['ingredient_set']:
+            ii = IngredientInstance.objects.create(
+                amount=isdata['amount'],
+                ingredient=ingredient_dict[isdata['ingredient_name']],
+                food=food,
+                )
+    return Response({"message": "Loaded."})
+
+@api_view(['GET'])
 def loadData(request):
     load_nutrients_from_file()
     load_ingredients_from_file()
@@ -379,6 +498,8 @@ def serialize_food(food : Food):
         "id" : food.id,
         "food_name" : food.food_name,
     }
+    if (food.image):
+        ret['image'] = food.image.url
     return ret
 
 def serialize_meal(meal : Meal):
@@ -422,7 +543,7 @@ def get_ingredients_render_data(ingredients, show_details=False):
 #     return ingredient_dict_by_id
 
 
-def get_food_render_data(food, show_details=False):
+def get_food_render_data(food, show_details=False, show_total=False):
     render_data = serialize_food(food)
     render_data["ingredient_set"] = []
     ingredient_dict = get_ingredient_dict_by_id()

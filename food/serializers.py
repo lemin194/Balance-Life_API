@@ -1,4 +1,5 @@
 from rest_framework.serializers import ModelSerializer
+from rest_framework import serializers
 from .mscript import *
 from django.contrib.auth.models import User
 
@@ -31,9 +32,10 @@ class IngredientSerializer(ModelSerializer):
         fields = '__all__'
         
 class FoodSerializer(ModelSerializer):
+    image = serializers.ImageField(max_length=None, use_url=True)
     class Meta:
         model = Food
-        fields = '__all__'
+        fields = ('id', 'food_name', 'image')
         
 class MealSerializer(ModelSerializer):
     class Meta:

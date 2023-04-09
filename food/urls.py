@@ -13,6 +13,7 @@ urlpatterns = [
     path('load_data/', views.loadData, name='load_data'),
     path('load_ingredients_data/', views.loadIngredientsData, name='load_ingredients'),
     path('load_nutrients_data/', views.loadNutrientsData, name='load_nutrients'),
+    path('load_sample_foods_data/', views.loadSampleFoodsData, name='load_sample_foods'),
     path('', views.getRoutes, name='get_routes'),
     path('nutrients/', views.getNutrients, name='get_nutrients'),
     path('nutrients/<str:pk>/', views.getNutrient, name='get_nutrient'),
