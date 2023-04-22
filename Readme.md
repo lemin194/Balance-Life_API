@@ -1,5 +1,5 @@
 
-# Foodtracking App API
+# Balance App API
 
 A simple foodtracking API, for school project.
 
@@ -40,10 +40,8 @@ These lines will create MySQL tables. You can check with MySQL Workbench.
 
 5. Run server
 ```
-    python manage.py runserver
+    python manage.py runserver 0.0.0.0:8000
 ```
-## Database
-This API use MySQL as the database manager, so make sure you have it installed. 
 ## Superuser and admin page
 Run the following command to create a superuser that you can use to play with the database.
 ```
@@ -55,7 +53,7 @@ The admin page will let you do anything with the database, which will help you c
 ## How to use (in Dart)
 1. Run server.
 ```
-    python manage.py runserver
+    python manage.py runserver 0.0.0.0:8000
 ```
 The server will be launched on local host at port 8000 by default.\
 Go to 127.0.0.1:8000/ to see all entrypoints available to use.\
@@ -68,13 +66,16 @@ Explain:
 * "PUT" request is for updating an item. For example: sending a PUT request to endpoint /meals/5/update/ to perform an update on the meal object with the id = 5.
 * "DELETE" request is for deleting an item. For example: sending a DELETE request to endpoint /meals/5/delete/ will delete the meal with id = 5 if exists (if doesn't exist it will response with a Bad Request)
 * Every endpoints can be seen at 127.0.0.1:8000/
+*
+* There is an endpoint at /load_data/, which will load the ingredients and nutrients data with the 
 
     
 2. Import http package.
 * Installation: https://pub.dev/packages/http/install
 ```
-import 'dart:convert'; // for json encode and decode.
+import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:http/http.dart';
 ```
 
 3. Register, login.
@@ -151,5 +152,61 @@ void getIngredients() async {
     } catch (e) {
         debugPrint(e.toString());
     }
+}
+```
+### Uploading food image
+
+```
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart' as path;
+import 'package:http/http.dart' as http;
+
+
+var url = '192.168.0.100:8000';
+
+Future<String> sendPostRequest({endpoint, body}) async {
+  final headers = {
+    'Content-type': 'application/json',
+    'Accept': 'application/json',
+  };
+  try {
+    final response = await http.post(Uri.http(url, endpoint),
+        headers: headers, body: jsonEncode(body));
+    if (response.statusCode != 200) throw Exception(response.body);
+    return response.body;
+  } catch (e) {
+    debugPrint(e.toString());
+    return e.toString();
+  }
+}
+
+Future<void> uploadImage() async {
+    final ImagePicker picker = ImagePicker();
+
+    final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery, imageQuality: 70);
+    if (image == null) {
+        print("no image picked");
+        return;
+    }
+    File imagefile = File(image.path);
+    Uint8List imagebytes = await imagefile.readAsBytes();
+    String base64string = base64.encode(imagebytes);
+    var foodId = 2;
+    var send_data = 
+    {
+        "file": 
+        {
+            "filename": path.basename(imagefile.path),
+            "content": base64string,
+        },
+    };
+    var response = await sendPostRequest(
+        endpoint:
+            "foods/" + foodId.toString() + "/uploadimage/",
+        body: send_data);
+    debugPrint(response);
 }
 ```
