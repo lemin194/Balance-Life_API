@@ -2,6 +2,8 @@
 from pathlib import Path
 import socket
 import os
+
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -15,12 +17,7 @@ SECRET_KEY = 'django-insecure-!vq&uvm_m^m%frvq_hh=*j282+1u(vbrws=n_p!-boj15n!3v4
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = [
-    'localhost',
-    '127.0.0.1',
-    '172.19.201.178',
-    '192.168.0.103',
-]
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -34,8 +31,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    'chat',
     'food.apps.FoodConfig',
+    'chat',
 
     'rest_framework',
     'rest_framework.authtoken',
@@ -88,10 +85,7 @@ WSGI_APPLICATION = 'balance.wsgi.application'
 ASGI_APPLICATION = "balance.asgi.application"
 CHANNEL_LAYERS = {
     "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)],
-        },
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
     },
 }
 
@@ -101,11 +95,8 @@ CHANNEL_LAYERS = {
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'db_balance',
-        'USER': 'root',
-        'PASSWORD': '',
-        'HOST': 'localhost'
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': 'db.sqlite3',
     }
 }
 
@@ -148,6 +139,9 @@ LOGIN_URL = 'login'
 # https://docs.djangoproject.com/en/4.1/howto/static-files/
 
 STATIC_URL = '/static/'
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static')
+]
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
@@ -158,8 +152,9 @@ MEDIA_URL = '/media/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-ip_address = socket.gethostbyname(socket.gethostname())
-urls = [f'http://localhost:{port}' for port in range(1, 65536)]
-CSRF_TRUSTED_ORIGINS  = []
-CSRF_TRUSTED_ORIGINS += urls
+AUTH_USER_MODEL = "food.User"
+
+SECURE_CROSS_ORIGIN_OPENER_POLICY = None
 CORS_ALLOW_ALL_ORIGINS = True
+
+

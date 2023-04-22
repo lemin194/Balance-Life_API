@@ -7,7 +7,20 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from rest_framework.authtoken.models import Token
 
+from django.contrib.auth.models import AbstractUser
 
+class User(AbstractUser):
+    class Role(models.TextChoices):
+        NORMAL = "Normal"
+        SPECIALIST = "Specialist"
+    role = models.CharField(max_length=50, choices=Role.choices)
+
+    def save(self, *args, **kwargs):
+        if not self.pk:
+            return super().save(*args, *kwargs)
+
+    def __str__(self):
+        return f'{self.username}'
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def create_auth_token(sender, instance=None, created=False, **kwargs):

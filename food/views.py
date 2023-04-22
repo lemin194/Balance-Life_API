@@ -1,8 +1,6 @@
 from django.shortcuts import render, redirect
 from django.http import HttpResponseRedirect, JsonResponse, HttpResponseBadRequest
-from django.views.generic.list import ListView
-from django.views.generic.detail import DetailView
-from django.views.generic.edit import CreateView, DeleteView, UpdateView, FormView
+
 
 from django.contrib.auth.views import LoginView
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -14,7 +12,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from django.db.models import Q
 
-from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.decorators import api_view
 from rest_framework import generics, permissions
 from rest_framework.response import Response
 
@@ -22,7 +20,6 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authtoken.models import Token
 
-from django.utils import timezone
 from datetime import datetime, timedelta, time
 
 from functools import reduce
@@ -31,7 +28,16 @@ from functools import reduce
 from .serializers import UserSerializer, RegisterSerializer,\
                         MealSerializer, FoodSerializer, NutrientSerializer
 
+
+from django.db.models.fields.files import ImageFieldFile
 from .mscript import *
+import base64
+import os
+import re
+from django.utils import timezone
+
+
+User = get_user_model()
 
 
 @api_view(['GET'])
@@ -57,7 +63,7 @@ def getRoutes(request):
         },
         {
             "Endpoint": "accounts/profile/",
-            "method": ["GET"],
+            "method": ["POST"],
             "body": {
                 "user_id": 0,
             },
@@ -165,7 +171,19 @@ def getRoutes(request):
                     }
                 ]
             },
-            "description": 'Show details of the food with the corresponding id. If show_details is true, it will show the whole nutrients value of the food.'
+            "description": 'Update details of the food with the corresponding id.'
+        },
+        {
+            "Endpoint": "/foods/id/uploadimage/",
+            "method": ["POST"],
+            "body": {
+                "file":
+                {
+                    "filename": "",
+                    "content": "bytes",
+                }
+            },
+            "description": 'Upload image for the food with the corresponding id.'
         },
         {
             "Endpoint": "/foods/id/delete/",
@@ -179,7 +197,7 @@ def getRoutes(request):
                     }
                 ]
             },
-            "description": 'Show details of the food with the corresponding id. If show_details is true, it will show the whole nutrients value of the food.'
+            "description": 'Delete the food with the corresponding id.'
         },
         
         
@@ -277,9 +295,12 @@ def login_view(request):
     user = authenticate(request, username=username, password=password)
     if user is not None:
         # login(request, user)
-        return Response({
+        serializer = UserSerializer(user, many=False)
+        response = {
             "user_id": user.id
-            })
+        }
+        response.update(serializer.data)
+        return Response(response)
     else:
         return HttpResponseBadRequest("Username or password is invalid.")
 
@@ -288,18 +309,26 @@ def register_view(request):
     data = request.data
     username = data['username']
     password = data['password']
+    role = data.setdefault('role', 'Normal')
     if (not username or not password):
         return HttpResponseBadRequest("Both username and password field is required.")
-
-    User = get_user_model()
+    
+    role_choices = []
+    for role_choice in User.Role.choices:
+        role_choices.append(role_choice[0])
+    if (role not in role_choices):
+        role = User.Role.NORMAL
     if User.objects.filter(username=username).count():
         return HttpResponseBadRequest("Username is already taken.")
-    user = User.objects.create_user(username=username, password=password)
+    user = User.objects.create_user(username=username, password=password, role=role)
     user.save()
-    return Response({
+    serializer = UserSerializer(user, many=False)
+    response = {
         "message": "User %s registered." % username,
         "user_id": user.id
-    })
+    }
+    response.update(serializer.data)
+    return Response(response)
 
 
 @api_view(['POST'])
@@ -309,15 +338,19 @@ def logout_view(request):
         return Response({"message": "No user logged in."})
     logout(request)
     return Response({"message": "Logged out."})
-@api_view(['GET'])
+@api_view(['POST'])
 def user_profile_view(request):
     user = User.objects.get(id = request.data['user_id'])
     if not user.is_authenticated:
-        return Response("Anonymous User")
+        return Response({"message": "Anonymous User"})
     serializer = UserSerializer(user, many=False)
     return Response(serializer.data)
     
-
+@api_view(["GET", "POST"])
+def get_all_user_profiles(request):
+    user = User.objects.all()
+    serializer = UserSerializer(user, many=True)
+    return Response(serializer.data)
 
 @api_view(['GET'])
 def loadNutrientsData(request):
@@ -711,6 +744,8 @@ def createFood(request):
     get_food_dict_by_id(True)
     return Response({"message": "Food created."})
 
+
+
 @api_view(['PUT'])
 def updateFood(request, pk):
     data = request.data
@@ -729,6 +764,28 @@ def updateFood(request, pk):
 
     get_food_dict_by_id(True)
     return Response({"message": "Food updated."})
+
+
+@api_view(['POST'])
+def uploadFoodImage(request, pk):
+    data = request.data
+    filename_with_extension = data['file']['filename']
+    (filename, extension) = os.path.splitext(filename_with_extension)
+    
+    image_content = data['file']['content']
+    decoded_content = base64.b64decode(image_content)
+    newfilename = "images/food/" \
+        + filename + re.sub(r'[+:. ]', '-', str(timezone.now())) + extension
+    
+    os.makedirs(os.path.dirname("media/" + newfilename), exist_ok=True)
+    with open("media/" + newfilename, 'wb') as f:
+        f.write(decoded_content)
+    
+    food = Food.objects.get(id=pk)
+    food.image.name = newfilename
+    food.save()
+    return Response({"message":"Uploaded image for %s." % food.food_name})
+
 
 @api_view(['DELETE'])
 def deleteFood(request, pk):
