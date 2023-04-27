@@ -7,10 +7,10 @@ from rest_framework.authtoken import views as rest_view
 
 urlpatterns = [
     path('accounts/profile/', views.user_profile_view, name='user_profile'),
+    path('accounts/profile/<str:pk>/upload_profile_image/', views.uploadProfileImage, name='upload_profile_image'),
     path('accounts/register/', views.register_view, name='register'),
     path('accounts/login/', views.login_view, name="login"),
-    path('accounts/logout/', views.logout_view, name='logout'),
-    path('get_all_user_profiles/', views.get_all_user_profiles, name="user_profiles"),
+    path('get_users/', views.get_users, name="user_profiles"),
     path('load_data/', views.loadData, name='load_data'),
     path('load_ingredients_data/', views.loadIngredientsData, name='load_ingredients'),
     path('load_nutrients_data/', views.loadNutrientsData, name='load_nutrients'),
@@ -24,7 +24,7 @@ urlpatterns = [
     path('foods/create/', views.createFood, name='create_food'),
     path('foods/<str:pk>/', views.getFood, name='get_food'),
     path('foods/<str:pk>/update/', views.updateFood, name='update_food'),
-    path('foods/<str:pk>/uploadimage/', views.uploadFoodImage, name='uploadimage_food'),
+    path('foods/<str:pk>/upload_image/', views.uploadFoodImage, name='upload_food_image'),
     path('foods/<str:pk>/delete/', views.deleteFood, name='delete_food'),
     path('meals/', views.getMeals, name='get_meals'),
     path('meals/bydate/', views.getMealsByDate, name='get_meals'),

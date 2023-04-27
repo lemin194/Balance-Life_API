@@ -18,15 +18,24 @@ class Message(models.Model):
     is_liked = models.BooleanField(default=False)
     
     def __str__(self):
-        return self.author.username
+        return f'{self.author} - {self.timestamp}'
 
     def last_10_messages():
         return Message.objects.order_by('timestamp').all()[:10]
+
 
 class ChatRoom(models.Model):
     name = models.CharField(max_length=50)
     user = models.ManyToManyField(User)
     last_message_sent = models.ForeignKey(Message, on_delete=models.PROTECT, null=True, blank=True)
     def __str__(self):
+
         return f'{self.name}'
 
+
+class LastMessageReadInstance(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    message = models.ForeignKey(Message, on_delete=models.CASCADE, null=True)
+    chatroom = models.ForeignKey(ChatRoom, on_delete=models.CASCADE)
+    def __str__(self):
+        return f'{self.user.id} - {self.message.id}'

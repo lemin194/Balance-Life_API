@@ -10,7 +10,6 @@ from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 
-from django.db.models import Q
 
 from rest_framework.decorators import api_view
 from rest_framework import generics, permissions
@@ -22,10 +21,12 @@ from rest_framework.authtoken.models import Token
 
 from datetime import datetime, timedelta, time
 
+from django.db.models import Q
 from functools import reduce
+import operator
 
 
-from .serializers import UserSerializer, RegisterSerializer,\
+from .serializers import UserSerializer,\
                         MealSerializer, FoodSerializer, NutrientSerializer
 
 
@@ -47,19 +48,21 @@ def getRoutes(request):
             "Endpoint": "/accounts/login/",
             "method": ["POST"],
             "body": {
-                "username": "",
+                "email": "",
                 "password": ""
             },
-            "description": "Returns an id if username and password is valid."
+            "description": "Returns an id if email and password is valid."
         },
         {
             "Endpoint": "accounts/register/",
             "method": ["POST"],
             "body": {
-                "username": "",
-                "password": ""
+                "email": "",
+                "password": "",
+                "first_name": "",
+                "last_name": "", 
             },
-            "description": "Create a new user if username and password is valid, then return user id."
+            "description": "Create a new user if email and password is valid, then return user id."
         },
         {
             "Endpoint": "accounts/profile/",
@@ -69,6 +72,19 @@ def getRoutes(request):
             },
             "description": "Return details about an user if user_id exists."
         },
+        {
+            "Endpoint": "accounts/profile/id/upload_profile_image/",
+            "method": ["POST"],
+            "body": {
+                "file":
+                {
+                    "filename": "",
+                    "content": "bytes",
+                }
+            },
+            "description": 'Upload image for user with the corresponding id.'
+        },
+
 
 
 
@@ -174,7 +190,7 @@ def getRoutes(request):
             "description": 'Update details of the food with the corresponding id.'
         },
         {
-            "Endpoint": "/foods/id/uploadimage/",
+            "Endpoint": "/foods/id/upload_image/",
             "method": ["POST"],
             "body": {
                 "file":
@@ -222,7 +238,7 @@ def getRoutes(request):
                 "show_total": False,
                 "time": "",
             },
-            "description": '''Show a list of meals of the user with the user_id, filtered by the same date as the time input.'''
+            "description": '''Show a list of meals filtered by the same date as the time input.'''
         },
         {
             "Endpoint": "/meals/byweek/",
@@ -234,7 +250,7 @@ def getRoutes(request):
                 "show_total": False,
                 "time": "",
             },
-            "description": '''Show a list of meals of the user with the user_id, filtered by the same week as the time input.'''
+            "description": '''Show a list of meals filtered by the same week as the time input.'''
         },
         {
             "Endpoint": "/meals/id/",
@@ -289,10 +305,10 @@ def getRoutes(request):
 @api_view(['POST'])
 def login_view(request):
     data = request.data
-    username = data['username']
+    email = data['email']
     password = data['password']
 
-    user = authenticate(request, username=username, password=password)
+    user = authenticate(request, email=email, password=password)
     if user is not None:
         # login(request, user)
         serializer = UserSerializer(user, many=False)
@@ -302,29 +318,31 @@ def login_view(request):
         response.update(serializer.data)
         return Response(response)
     else:
-        return HttpResponseBadRequest("Username or password is invalid.")
+        return HttpResponseBadRequest("Email or password is invalid.")
 
 @api_view(['POST'])
 def register_view(request):
     data = request.data
-    username = data['username']
+    email = data['email']
     password = data['password']
+    first_name = data.setdefault('first_name', '')
+    last_name = data.setdefault('last_name', '')
     role = data.setdefault('role', 'Normal')
-    if (not username or not password):
-        return HttpResponseBadRequest("Both username and password field is required.")
+    if (not email or not password):
+        return HttpResponseBadRequest("Both email and password field is required.")
     
     role_choices = []
     for role_choice in User.Role.choices:
         role_choices.append(role_choice[0])
     if (role not in role_choices):
         role = User.Role.NORMAL
-    if User.objects.filter(username=username).count():
-        return HttpResponseBadRequest("Username is already taken.")
-    user = User.objects.create_user(username=username, password=password, role=role)
+    if User.objects.filter(email=email).count():
+        return HttpResponseBadRequest("This email has already been registered before.")
+    user = User.objects.create_user(email=email, password=password, role=role, first_name=first_name, last_name=last_name)
     user.save()
     serializer = UserSerializer(user, many=False)
     response = {
-        "message": "User %s registered." % username,
+        "message": "User %s registered." % user,
         "user_id": user.id
     }
     response.update(serializer.data)
@@ -332,25 +350,40 @@ def register_view(request):
 
 
 @api_view(['POST'])
-def logout_view(request):
-    user = request.user
-    if (user is None):
-        return Response({"message": "No user logged in."})
-    logout(request)
-    return Response({"message": "Logged out."})
-@api_view(['POST'])
 def user_profile_view(request):
     user = User.objects.get(id = request.data['user_id'])
     if not user.is_authenticated:
         return Response({"message": "Anonymous User"})
-    serializer = UserSerializer(user, many=False)
-    return Response(serializer.data)
+    return Response(serialize_user(user))
     
 @api_view(["GET", "POST"])
-def get_all_user_profiles(request):
-    user = User.objects.all()
-    serializer = UserSerializer(user, many=True)
-    return Response(serializer.data)
+def get_users(request):
+    data = request.data
+    search_input = data.setdefault('search_input', '')
+    users = User.objects.filter(reduce(operator.or_, (Q(first_name__icontains=x) | Q(last_name__icontains=x) for x in search_input.strip().split(' '))))
+    return Response(serialize_users(users))
+
+@api_view(["POST"])
+def uploadProfileImage(request, pk):
+    
+    data = request.data
+    filename_with_extension = data['file']['filename']
+    (filename, extension) = os.path.splitext(filename_with_extension)
+    
+    image_content = data['file']['content']
+    decoded_content = base64.b64decode(image_content)
+    newfilename = "images/profile_image/" \
+        + filename + re.sub(r'[+:. ]', '-', str(timezone.now())) + extension
+    
+    os.makedirs(os.path.dirname("media/" + newfilename), exist_ok=True)
+    with open("media/" + newfilename, 'wb') as f:
+        f.write(decoded_content)
+    
+    user = User.objects.get(id=pk)
+    user.profile_image.name = newfilename
+    user.save()
+    return Response({"message":"Uploaded image for %s." % user})
+
 
 @api_view(['GET'])
 def loadNutrientsData(request):
@@ -832,7 +865,12 @@ def getMeals(request):
     show_total = data.setdefault('show_total', False)
     search_input = data.setdefault('search_input', '')
     meals = Meal.objects.filter(user=user, title__contains=search_input)
-    render_data = get_meals_render_data(list(meals), show_details=show_details, show_total=show_total)
+    
+    page = data.setdefault('page', 1)
+    pagesize = data.setdefault('pagesize', 10)
+    page -= 1
+    list_to_show = list(meals)[page * pagesize: (page + 1) * pagesize]
+    render_data = get_meals_render_data(list_to_show, show_details=show_details, show_total=show_total)
 
     return Response(render_data)
 
@@ -854,7 +892,12 @@ def getMealsByDate(request):
     time_start = datetime.combine(today, time())
     time_end = datetime.combine(tomorrow, time())
     meals = Meal.objects.filter(user=user, time__gte=time_start, time__lte=time_end, title__contains=search_input)
-    render_data = get_meals_render_data(list(meals), show_details=show_details, show_total=show_total)
+    
+    page = data.setdefault('page', 1)
+    pagesize = data.setdefault('pagesize', 10)
+    page -= 1
+    list_to_show = list(meals)[page * pagesize: (page + 1) * pagesize]
+    render_data = get_meals_render_data(list_to_show, show_details=show_details, show_total=show_total)
 
     return Response(render_data)
 
@@ -874,7 +917,12 @@ def getMealsByWeek(request):
     time_start = datetime.combine(date.date() - timedelta(days=date.weekday()), time())
     time_end = datetime.combine(time_start + timedelta(days=7), time())
     meals = Meal.objects.filter(user=user, time__gte=time_start, time__lte=time_end, title__contains=search_input)
-    render_data = get_meals_render_data(list(meals), show_details=show_details, show_total=show_total)
+    
+    page = data.setdefault('page', 1)
+    pagesize = data.setdefault('pagesize', 10)
+    page -= 1
+    list_to_show = list(meals)[page * pagesize: (page + 1) * pagesize]
+    render_data = get_meals_render_data(list_to_show, show_details=show_details, show_total=show_total)
 
     return Response(render_data)
 

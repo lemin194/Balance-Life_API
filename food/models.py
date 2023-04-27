@@ -8,19 +8,28 @@ from django.dispatch import receiver
 from rest_framework.authtoken.models import Token
 
 from django.contrib.auth.models import AbstractUser
+from django.utils.translation import gettext_lazy as _
+
+from .managers import CustomUserManager
 
 class User(AbstractUser):
+    username = None
+    email = models.EmailField(_("email address"), unique=True)
+    
     class Role(models.TextChoices):
         NORMAL = "Normal"
         SPECIALIST = "Specialist"
-    role = models.CharField(max_length=50, choices=Role.choices)
+    role = models.CharField(max_length=50, choices=Role.choices, default="Normal")
+    profile_image = models.ImageField(upload_to='images/profile_image/', default='images/profile_image/noavatar.png', null=True, blank=True)
 
-    def save(self, *args, **kwargs):
-        if not self.pk:
-            return super().save(*args, *kwargs)
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = []
+
+    objects = CustomUserManager()
 
     def __str__(self):
-        return f'{self.username}'
+        return f'{self.email}'
+
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def create_auth_token(sender, instance=None, created=False, **kwargs):
@@ -41,7 +50,7 @@ class Ingredient(models.Model):
 
 class Food(models.Model):
     food_name = models.CharField(max_length=30)
-    image = models.ImageField(upload_to='images/', null=True, blank=True)
+    image = models.ImageField(upload_to='images/food/', null=True, blank=True)
     def __str__(self):
         return f"{self.food_name}"
         

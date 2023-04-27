@@ -20,6 +20,26 @@ def get_all_logged_in_users():
 
 
 
+def serialize_user(user : User):
+    ret = {
+        'id': user.id,
+        'profile_image': user.profile_image.url,
+        'last_login': user.last_login,
+        'username' : user.username,
+        'first_name': user.first_name,
+        'last_name': user.last_name,
+        'email': user.email,
+        'date_joined': user.date_joined,
+        'role': user.role,
+    }
+    return ret
+
+def serialize_users(users):
+    ret = []
+    for user in users:
+        ret.append(serialize_user(user))
+    return ret
+
 
 
 nutrient_dict_by_id = {}

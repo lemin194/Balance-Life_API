@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin
 from .models import Meal, Food, Ingredient, Nutrient, NutrientInstance, FoodInstance, IngredientInstance, User
 
 # Register your models here.

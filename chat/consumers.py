@@ -47,7 +47,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             chatroom.user.add(User.objects.get(id=user_id))
         chatroom.last_message_sent = message
         chatroom.save()
-        print("created chat room")
+        
         send_data = {
             'command': 'new_message',
             'message': message_to_json(message),
@@ -113,6 +113,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         chatroom = ChatRoom.objects.get_or_create(name=self.room_name)[0]
         chatroom.last_message_sent = message
+        chatroom.user.add(author_user)
         chatroom.save()
 
         send_data = {
@@ -137,6 +138,52 @@ class ChatConsumer(AsyncWebsocketConsumer):
             chatroom.user.add(user)
         
         chatroom.save()
+    
+    def sync_read_messages(self, data):
+        user_id = data['user_id']
+
+        send_data = {"status": "OK"}
+        self.chatroom = self.get_chatroom()
+        print(self.chatroom)
+        if (not self.chatroom):
+            return {"status": "ERROR"}
+        
+        lastmessagereadinstance = self.chatroom.lastmessagereadinstance_set.get_or_create(
+            chatroom=self.chatroom,
+            user=User.objects.get(id=user_id)
+        )[0]
+        lastmessagereadinstance.message = self.chatroom.last_message_sent
+        lastmessagereadinstance.save()
+        
+
+        return send_data
+    async def read_messages(self, data): 
+        send_data = await database_sync_to_async(self.sync_read_messages)(data)
+
+        if (send_data['status'] == "OK"):
+            await self.reload_chatroom()
+            await self.update_chatrooms()
+            return
+        return
+
+    def sync_reload_chatroom(self):
+        
+        self.chatroom = self.get_chatroom()
+        send_data = {
+            "command": "reload_chatroom",
+            "chatroom": serialize_chatroom(self.chatroom),
+        }
+        return send_data
+
+    async def reload_chatroom(self):
+        send_data = await database_sync_to_async(self.sync_reload_chatroom)()
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                "type": "chat_newupdate",
+                "message": send_data
+            }
+        )
 
 
     commands = {
@@ -145,6 +192,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
         'create_chat_room': create_chat_room,
         'new_group_message': new_group_message,
         'new_image_message': new_image_message,
+        'read_messages' : read_messages,
+        'reload_chatroom': reload_chatroom,
     }
 
     
@@ -193,8 +242,23 @@ class ChatConsumer(AsyncWebsocketConsumer):
         print(data)
         await self.commands[data['command']](self, data)
 
+
+    async def update_chatrooms(self):
+        
+        user_list = await database_sync_to_async(self.get_all_user)()
+        
+        for user in user_list:
+            await self.channel_layer.group_send(
+                "chatrooms_%s" % user.id,
+                {
+                    "type": "chatrooms.newupdate",
+                    "message" : {
+                        "command": "get_all_chatrooms",
+                    }
+                }
+            )
+
     async def send_chat_message(self, message):
-        print(message)
         await self.channel_layer.group_send(
             self.room_group_name,
             {
@@ -205,28 +269,24 @@ class ChatConsumer(AsyncWebsocketConsumer):
         if not self.chatroom:
             self.chatroom = await database_sync_to_async(self.get_chatroom)()
         
-        user_list = await database_sync_to_async(self.get_all_user)()
-        print(len(user_list))
-        for user in user_list:
-            await self.channel_layer.group_send(
-                "chatrooms_%s" % user.id,
-                {
-                    "type": "websocket.newupdate",
-                    "message" : {
-                        "command": "get_all_chatrooms",
-                    }
-                }
-            )
+        await self.update_chatrooms()
 
-    async def send_image_message(self, message):
-        print(message)
 
     async def send_message(self, message):
         await self.send(text_data=json.dumps(message))
     
+
+    async def chat_newupdate(self, event):
+        send_data = event['message']
+        await self.send(text_data=json.dumps(send_data))
+
     async def chat_message(self, event):
         message = event['message']
         await self.send(text_data=json.dumps(message))
+
+
+
+
 
 
 class ChatRoomsConsumer(WebsocketConsumer):
@@ -295,6 +355,6 @@ class ChatRoomsConsumer(WebsocketConsumer):
     def send_message(self, message):
         self.send(text_data=json.dumps(message))
 
-    def websocket_newupdate(self, event):
+    def chatrooms_newupdate(self, event):
         message = event['message']
         self.commands[message['command']](self, message)
