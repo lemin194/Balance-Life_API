@@ -118,7 +118,7 @@ void login() async {
     };
     final user_profile_msg =
         jsonEncode({
-            'username': 'joe@gmail.com', 
+            'email': 'joe@gmail.com', 
             'password': 'abc123',
         });
     try {
