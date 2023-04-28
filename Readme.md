@@ -89,7 +89,12 @@ void register() async {
     'Content-type': 'application/json',
     };
     final user_profile_msg =
-        jsonEncode({'username': 'joe', 'password': 'abcd1234'});
+        jsonEncode({
+            'email': 'joe@gmail.com', 
+            'password': 'abcd1234',
+            'first_name': 'Joe',
+            'last_name': 'Hill',
+        });
     try {
         final response = await http.post(Uri.http(url, '/accounts/register/'),
             headers: headers, body: user_profile_msg);
@@ -112,7 +117,10 @@ void login() async {
         'Content-type': 'application/json',
     };
     final user_profile_msg =
-        jsonEncode({'username': 'dane', 'password': 'abcd1234'});
+        jsonEncode({
+            'username': 'joe@gmail.com', 
+            'password': 'abc123',
+        });
     try {
         final response = await http.post(Uri.http(url, '/accounts/login/'),
             headers: headers, body: user_profile_msg);
