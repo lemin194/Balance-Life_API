@@ -105,7 +105,11 @@ def get_ingredient_dict_by_id():
             nutrient_dict = get_nutrient_dict_by_id()
             for n in ingredient.nutrientinstance_set.values_list():
                 nutrient_name = nutrient_dict[n[2]].nutrient_name
-                ingredient_dict_element["nutrient_set"][nutrient_name] = n[1] #amount
+                rda = nutrient_dict[n[2]].rda
+                ingredient_dict_element["nutrient_set"][nutrient_name] = {
+                    "ammount": n[1], #amount
+                    "rda": rda
+                }
             ingredient_dict_by_id[ingredient.id] = ingredient_dict_element
 
     return ingredient_dict_by_id
