@@ -661,7 +661,7 @@ def get_foods_render_data(foods, show_details=False, show_total=False):
             iidict["nutrient_set"] = {}
             if (show_details or show_total):
                 for nutrient_name in ingredient_dict_element["nutrient_set"]:
-                    nutrient_amount = ingredient_dict_element["nutrient_set"][nutrient_name]
+                    nutrient_amount = ingredient_dict_element["nutrient_set"][nutrient_name]["ammount"]
                     iidict["nutrient_set"][nutrient_name] = float(nutrient_amount) * float(iiamount) / 100
             food_render_data["ingredient_set"].append(iidict)
         render_data.append(food_render_data)
@@ -775,7 +775,12 @@ def createFood(request):
             amount=ingr["amount"]
         )
     get_food_dict_by_id(True)
-    return Response({"message": "Food created."})
+    return Response({
+        "message": "Food created.",
+        "data": {
+            "id": food.id
+        }
+    })
 
 
 
