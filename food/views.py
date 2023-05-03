@@ -766,7 +766,17 @@ def getFood(request, pk):
 @api_view(['POST'])
 def createFood(request):
     data = request.data
-    food = Food.objects.create(food_name=data['food_name'])
+
+    user_id = data.setdefault('user_id', -1)
+    if (not User.objects.filter(id=user_id).exists()):
+        return HttpResponseBadRequest("Invalid user_id.")
+    user = User.objects.get(id = user_id)
+
+    food = Food.objects.create(
+        food_name=data['food_name'],
+        food_description=data['food_description'],
+        user=user
+    )
     ingredient_object_dict = get_ingredient_object_dict_by_name()
     for ingr in data['ingredient_set']:
         ii = IngredientInstance.objects.create(

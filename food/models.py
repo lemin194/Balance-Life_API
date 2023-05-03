@@ -50,6 +50,9 @@ class Ingredient(models.Model):
 
 class Food(models.Model):
     food_name = models.CharField(max_length=30)
+    food_description = models.CharField(max_length=255, default="")
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE)
     image = models.ImageField(upload_to='images/food/', null=True, blank=True)
     def __str__(self):
         return f"{self.food_name}"
