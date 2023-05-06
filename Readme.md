@@ -222,6 +222,7 @@ Future<void> uploadImage() async {
 The app's database is stored in file "db.sqlite3", if you want to reset it, you have to remigrate the whole database, which can be done through following steps:
 * Delete the db.sqlite3 file.
 * Delete migrations data, which are the files "****_initial.py" located in "food/migrations/" and "chats/migrations/". If not it will conflict with the previous migrating instructions by the django app.
+![image](https://user-images.githubusercontent.com/61057734/236612118-17f55008-2af5-4c50-86f1-e1389364cefd.png)
 * Remigrate the database by following commands (this will create a new "db.sqlite3" file):
 ```
     python manage.py makemigrations
