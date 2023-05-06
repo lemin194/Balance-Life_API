@@ -60,7 +60,7 @@ def getRoutes(request):
                 "email": "",
                 "password": "",
                 "first_name": "",
-                "last_name": "", 
+                "last_name": "",
             },
             "description": "Create a new user if email and password is valid, then return user id."
         },
@@ -84,11 +84,22 @@ def getRoutes(request):
             },
             "description": 'Upload image for user with the corresponding id.'
         },
-
-
-
-
-
+        {
+            "Endpoint": "accounts/id/add_customer",
+            "method": ["POST"],
+            "body": {
+                "customer_id": 1
+            },
+            "description": 'Add customer for user with the corresponding id.'
+        },
+        {
+            "Endpoint": "accounts/id/add_specialist",
+            "method": ["POST"],
+            "body": {
+                "specialist_id": 1
+            },
+            "description": 'Add specialist for user with the corresponding id.'
+        },
         {
             "Endpoint": "/load_data/",
             "method": ["GET"],
@@ -118,7 +129,7 @@ def getRoutes(request):
             "description": '''Show details of the nutrient with the corresponding id. Example: /nutrients/1/.'''
         },
 
-        
+
         {
             "Endpoint": "/ingredients/",
             "method": ["GET", "POST"],
@@ -139,7 +150,7 @@ def getRoutes(request):
             "description": '''Show details of the ingredient with the corresponding id. Example: /ingredients/1/. If show_details is true, it will show the whole nutrients value of the ingredient.'''
         },
 
-        
+
         {
             "Endpoint": "/foods/",
             "method": ["GET", "POST"],
@@ -215,8 +226,8 @@ def getRoutes(request):
             },
             "description": 'Delete the food with the corresponding id.'
         },
-        
-        
+
+
         {
             "Endpoint": "/meals/",
             "method": ["GET", "POST"],
@@ -330,7 +341,7 @@ def register_view(request):
     role = data.setdefault('role', 'Normal')
     if (not email or not password):
         return HttpResponseBadRequest("Both email and password field is required.")
-    
+
     role_choices = []
     for role_choice in User.Role.choices:
         role_choices.append(role_choice[0])
@@ -355,7 +366,7 @@ def user_profile_view(request):
     if not user.is_authenticated:
         return Response({"message": "Anonymous User"})
     return Response(serialize_user(user))
-    
+
 @api_view(["GET", "POST"])
 def get_users(request):
     data = request.data
@@ -365,30 +376,50 @@ def get_users(request):
 
 @api_view(["POST"])
 def uploadProfileImage(request, pk):
-    
+
     data = request.data
     filename_with_extension = data['file']['filename']
     (filename, extension) = os.path.splitext(filename_with_extension)
-    
+
     image_content = data['file']['content']
     decoded_content = base64.b64decode(image_content)
     newfilename = "images/profile_image/" \
         + filename + re.sub(r'[+:. ]', '-', str(timezone.now())) + extension
-    
+
     os.makedirs(os.path.dirname("media/" + newfilename), exist_ok=True)
     with open("media/" + newfilename, 'wb') as f:
         f.write(decoded_content)
-    
+
     user = User.objects.get(id=pk)
     user.profile_image.name = newfilename
     user.save()
     return Response({"message":"Uploaded image for %s." % user})
 
 
+@api_view(['POST'])
+def add_specialist(request, pk):
+    data = request.data
+
+    user = User.objects.get(id=pk)
+    user.specialist_id = data["specialist_id"]
+    user.save()
+    return Response({"message": "Added specialist for %s." % user})
+
+
+@api_view(['POST'])
+def add_customer(request, pk):
+    data = request.data
+
+    user = User.objects.get(id=pk)
+    user.customer_id = data["customer_id"]
+    user.save()
+    return Response({"message": "Added customer for %s." % user})
+
+
 @api_view(['GET'])
 def loadNutrientsData(request):
     load_nutrients_from_file()
-    
+
     nutrients = Nutrient.objects.all()
     serializer = NutrientSerializer(nutrients, many=True)
 
@@ -529,7 +560,7 @@ def loadData(request):
 @api_view(['GET', 'POST'])
 def getNutrients(request):
     nutrients = Nutrient.objects.all()
-    
+
     data = request.data
     search_input = data.setdefault('search_input', '')
     nutrients = nutrients.filter(nutrient_name__icontains=search_input)
@@ -630,7 +661,7 @@ def get_food_render_data(food, show_details=False, show_total=False):
                 iidict["nutrient_set"][nutrient_name] = float(nutrient_amount) * float(iiamount) / 100
         render_data["ingredient_set"].append(iidict)
     return render_data
-         
+
 
 def get_foods_render_data(foods, show_details=False, show_total=False):
     render_data = []
@@ -665,7 +696,7 @@ def get_foods_render_data(foods, show_details=False, show_total=False):
                     iidict["nutrient_set"][nutrient_name] = float(nutrient_amount) * float(iiamount) / 100
             food_render_data["ingredient_set"].append(iidict)
         render_data.append(food_render_data)
-        
+
         if (show_total):
             food_ingredient_set = food_render_data['ingredient_set']
             for ingr in food_ingredient_set:
@@ -675,7 +706,7 @@ def get_foods_render_data(foods, show_details=False, show_total=False):
                 for nutrient_name in ingr_nutrient_set:
                     total_nutrient_set_dict[nutrient_name]['amount'] += float(ingr_nutrient_set[nutrient_name])
                     total_nutrient_set_dict[nutrient_name]['percentage'] += float(ingr_nutrient_set[nutrient_name]) / float(rda_dict[nutrient_name]) * 10000
-    
+
     if (show_total):
         total_nutrient_dict["nutrient_set"] = total_nutrient_set_dict
         render_data.append({"total_nutrients_value" : total_nutrient_dict})
@@ -729,7 +760,7 @@ def get_meals_render_data(meals, show_details=False, show_total=False):
     if (show_total):
         total_nutrient_dict["nutrient_set"] = total_nutrient_set_dict
         render_data.append({"total_nutrients_value" : total_nutrient_dict})
-                
+
 
 
     return render_data
@@ -737,12 +768,12 @@ def get_meals_render_data(meals, show_details=False, show_total=False):
 
 @api_view(['GET', 'POST'])
 def getFoods(request):
-    
+
     foods = Food.objects.all()
     data = request.data
     search_input = data.setdefault('search_input', '')
 
-    
+
     foods = foods.filter(food_name__icontains=search_input)
 
     show_details = data.setdefault('show_details', False)
@@ -780,7 +811,7 @@ def createFood(request):
     ingredient_object_dict = get_ingredient_object_dict_by_name()
     for ingr in data['ingredient_set']:
         ii = IngredientInstance.objects.create(
-            ingredient=ingredient_object_dict[ingr["ingredient_name"]], 
+            ingredient=ingredient_object_dict[ingr["ingredient_name"]],
             food=food,
             amount=ingr["amount"]
         )
@@ -805,7 +836,7 @@ def updateFood(request, pk):
     ingredient_object_dict = get_ingredient_object_dict_by_name()
     for ingr in data['ingredient_set']:
         ii = IngredientInstance.objects.create(
-            ingredient=ingredient_object_dict[ingr["ingredient_name"]], 
+            ingredient=ingredient_object_dict[ingr["ingredient_name"]],
             food=food,
             amount=ingr["amount"]
         )
@@ -819,16 +850,16 @@ def uploadFoodImage(request, pk):
     data = request.data
     filename_with_extension = data['file']['filename']
     (filename, extension) = os.path.splitext(filename_with_extension)
-    
+
     image_content = data['file']['content']
     decoded_content = base64.b64decode(image_content)
     newfilename = "images/food/" \
         + filename + re.sub(r'[+:. ]', '-', str(timezone.now())) + extension
-    
+
     os.makedirs(os.path.dirname("media/" + newfilename), exist_ok=True)
     with open("media/" + newfilename, 'wb') as f:
         f.write(decoded_content)
-    
+
     food = Food.objects.get(id=pk)
     food.image.name = newfilename
     food.save()
@@ -845,7 +876,7 @@ def deleteFood(request, pk):
 @api_view(['GET', 'POST'])
 def getIngredients(request):
     ingredients = Ingredient.objects.all()
-    
+
     data = request.data
     show_details = data.setdefault('show_details', False)
     search_input = data.setdefault('search_input', '')
@@ -880,7 +911,7 @@ def getMeals(request):
     show_total = data.setdefault('show_total', False)
     search_input = data.setdefault('search_input', '')
     meals = Meal.objects.filter(user=user, title__contains=search_input)
-    
+
     page = data.setdefault('page', 1)
     pagesize = data.setdefault('pagesize', 10)
     page -= 1
@@ -907,7 +938,7 @@ def getMealsByDate(request):
     time_start = datetime.combine(today, time())
     time_end = datetime.combine(tomorrow, time())
     meals = Meal.objects.filter(user=user, time__gte=time_start, time__lte=time_end, title__contains=search_input)
-    
+
     page = data.setdefault('page', 1)
     pagesize = data.setdefault('pagesize', 10)
     page -= 1
@@ -932,7 +963,7 @@ def getMealsByWeek(request):
     time_start = datetime.combine(date.date() - timedelta(days=date.weekday()), time())
     time_end = datetime.combine(time_start + timedelta(days=7), time())
     meals = Meal.objects.filter(user=user, time__gte=time_start, time__lte=time_end, title__contains=search_input)
-    
+
     page = data.setdefault('page', 1)
     pagesize = data.setdefault('pagesize', 10)
     page -= 1
@@ -945,7 +976,7 @@ def getMealsByWeek(request):
 @api_view(['GET', 'POST'])
 def getMeal(request, pk):
     data = request.data
-    
+
 
     meal = Meal.objects.get(id=pk)
     '''
@@ -976,8 +1007,8 @@ def createMeal(request):
 
     data = request.data
     meal = Meal.objects.create(
-        title = data['title'], 
-        time = data['time'], 
+        title = data['title'],
+        time = data['time'],
         user = user
     )
 
@@ -1006,8 +1037,8 @@ def updateMeal(request, pk):
     for fidict in data["food_set"]:
         foodinstance = FoodInstance(amount = fidict["amount"], food=food_dict[fidict["food_name"]], meal=meal)
         foodinstance.save()
-    
-    
+
+
     return Response(get_meals_render_data([meal]))
 
 @api_view(['DELETE'])

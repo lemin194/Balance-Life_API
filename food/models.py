@@ -21,6 +21,8 @@ class User(AbstractUser):
         SPECIALIST = "Specialist"
     role = models.CharField(max_length=50, choices=Role.choices, default="Normal")
     profile_image = models.ImageField(upload_to='images/profile_image/', default='images/profile_image/noavatar.png', null=True, blank=True)
+    customer_id = models.IntegerField(blank=True, null=True)
+    specialist_id = models.IntegerField(blank=True, null=True)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
