@@ -26,9 +26,6 @@ A simple foodtracking API, for school project.
 ```
     pip install -r requirements.txt
 ```
-```
-    pip install -U channels["daphne"]
-```
 4. Setup database:
 ```
     python manage.py makemigrations
