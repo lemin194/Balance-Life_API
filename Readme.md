@@ -1,5 +1,5 @@
 
-# Balance App API
+# Balance-Life App API
 
 A simple foodtracking API, for school project.
 
