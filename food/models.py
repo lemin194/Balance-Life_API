@@ -1,3 +1,5 @@
+import datetime
+
 from django.db import models
 from django.contrib.auth.models import User
 
@@ -62,15 +64,21 @@ class Food(models.Model):
 
 class Meal(models.Model):
     title = models.CharField(max_length=50, blank=True, null=True)
-    time = models.DateTimeField()
+    class Time(models.TextChoices):
+        BREAKFAST = "Breakfast"
+        LUNCH = "Lunch"
+        DINNER = "Dinner"
+    time = models.CharField(max_length=50, choices=Time.choices, default="Breakfast")
+    date = models.DateField(default=datetime.date.today)
     user = models.ForeignKey(
         User, on_delete=models.CASCADE)
     class Meta:
-        ordering = ['time']
+        ordering = ['date']
 
     def __str__(self):
         return (self.title if (self.title != None) else '')\
-        + ' ' + self.time.strftime('%Y-%m-%d %H:%M')
+        + ' ' + self.date.strftime('%d-%m-%Y') \
+        + ' ' + self.time
 
 
 

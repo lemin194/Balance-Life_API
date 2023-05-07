@@ -177,6 +177,7 @@ def getRoutes(request):
             "method": ["POST"],
             "body": {
                 "food_name": "",
+                "user_id": 1,
                 "ingredient_set": [
                     {
                         "ingredient_name": "",
@@ -191,6 +192,7 @@ def getRoutes(request):
             "method": ["PUT"],
             "body": {
                 "food_name": "",
+                "user_id": 1,
                 "ingredient_set": [
                     {
                         "ingredient_name": "",
@@ -279,9 +281,10 @@ def getRoutes(request):
                 "user_id" : 0,
                 "title": "",
                 "time" : "",
+                "date": "",
                 "food_set": [
                     {
-                        "food_name": "",
+                        "food_id": "",
                         "amount": ""
                     }
                 ]
@@ -534,11 +537,17 @@ def loadSampleFoodsData(request):
             ]
         }
     ]
+    if (not User.objects.filter(id=2).exists()):
+        return HttpResponseBadRequest("Invalid user_id.")
+    user = User.objects.get(id=2)
     ingredient_dict = get_ingredient_object_dict_by_name()
     for fdata in sample_data:
         if (Food.objects.filter(food_name=fdata['food_name']).exists()):
             continue
-        food = Food.objects.create(food_name=fdata['food_name'])
+        food = Food.objects.create(
+            food_name=fdata['food_name'],
+            user=user
+        )
         for isdata in fdata['ingredient_set']:
             ii = IngredientInstance.objects.create(
                 amount=isdata['amount'],
@@ -657,7 +666,7 @@ def get_food_render_data(food, show_details=False, show_total=False):
         iidict["nutrient_set"] = {}
         if (show_details):
             for nutrient_name in ingredient_dict_element["nutrient_set"]:
-                nutrient_amount = ingredient_dict_element["nutrient_set"][nutrient_name]
+                nutrient_amount = ingredient_dict_element["nutrient_set"][nutrient_name]["ammount"]
                 iidict["nutrient_set"][nutrient_name] = float(nutrient_amount) * float(iiamount) / 100
         render_data["ingredient_set"].append(iidict)
     return render_data
@@ -715,7 +724,10 @@ def get_foods_render_data(foods, show_details=False, show_total=False):
 
 def get_meals_render_data(meals, show_details=False, show_total=False):
 
-    render_data = []
+    render_data = {
+        "meals": [],
+        "total_nutrients_value": None
+    }
     nutrient_dict = get_nutrient_dict_by_name()
     ingredient_dict = get_ingredient_dict_by_id()
     food_dict = get_food_dict_by_id()
@@ -755,11 +767,11 @@ def get_meals_render_data(meals, show_details=False, show_total=False):
                 new_food_ingredient_set_dict.append(ingredient_dict)
             food_render_data['ingredient_set'] = new_food_ingredient_set_dict
             meal_render_data['food_set'].append(food_render_data)
-        render_data.append(meal_render_data)
+        render_data["meals"].append(meal_render_data)
 
     if (show_total):
         total_nutrient_dict["nutrient_set"] = total_nutrient_set_dict
-        render_data.append({"total_nutrients_value" : total_nutrient_dict})
+        render_data["total_nutrients_value"] = total_nutrient_dict
 
 
 
@@ -932,12 +944,10 @@ def getMealsByDate(request):
     data = request.data
     show_details = data.setdefault('show_details', False)
     show_total = data.setdefault('show_total', False)
-    date = data.setdefault('date', timezone.now())
-    today = date.date()
-    tomorrow = today + timedelta(days=1)
-    time_start = datetime.combine(today, time())
-    time_end = datetime.combine(tomorrow, time())
-    meals = Meal.objects.filter(user=user, time__gte=time_start, time__lte=time_end, title__contains=search_input)
+    search_input = data.setdefault('search_input', '')
+    date_start = datetime.strptime(data['date'], '%d-%m-%Y').date()
+    date_end = date_start
+    meals = Meal.objects.filter(user=user, date__gte=date_start, date__lte=date_end, title__contains=search_input)
 
     page = data.setdefault('page', 1)
     pagesize = data.setdefault('pagesize', 10)
@@ -959,10 +969,10 @@ def getMealsByWeek(request):
     data = request.data
     show_details = data.setdefault('show_details', False)
     show_total = data.setdefault('show_total', False)
-    date = data.setdefault('date', timezone.now())
-    time_start = datetime.combine(date.date() - timedelta(days=date.weekday()), time())
-    time_end = datetime.combine(time_start + timedelta(days=7), time())
-    meals = Meal.objects.filter(user=user, time__gte=time_start, time__lte=time_end, title__contains=search_input)
+    search_input = data.setdefault('search_input', '')
+    date_start = datetime.strptime(data['date'], '%d-%m-%Y').date()
+    date_end = (datetime.strptime(data['date'], '%d-%m-%Y') + timedelta(days=6)).date()
+    meals = Meal.objects.filter(user=user, date__gte=date_start, date__lte=date_end, title__contains=search_input)
 
     page = data.setdefault('page', 1)
     pagesize = data.setdefault('pagesize', 10)
@@ -1009,12 +1019,13 @@ def createMeal(request):
     meal = Meal.objects.create(
         title = data['title'],
         time = data['time'],
+        date = datetime.strptime(data['date'], '%d-%m-%Y').date(),
         user = user
     )
 
-    food_dict = get_food_dict_by_name()
+    food_dict = get_food_dict_by_id()
     for fidict in data["food_set"]:
-        foodinstance = FoodInstance(amount = fidict["amount"], food=food_dict[fidict["food_name"]], meal=meal)
+        foodinstance = FoodInstance(amount = fidict["amount"], food=food_dict[fidict["food_id"]], meal=meal)
         foodinstance.save()
 
 
@@ -1031,11 +1042,12 @@ def updateMeal(request, pk):
 
     meal.title = data['title']
     meal.time = data['time']
+    meal.date = datetime.strptime(data['date'], '%d-%m-%Y').date(),
 
     meal.foodinstance_set.all().delete()
-    food_dict = get_food_dict_by_name()
+    food_dict = get_food_dict_by_id()
     for fidict in data["food_set"]:
-        foodinstance = FoodInstance(amount = fidict["amount"], food=food_dict[fidict["food_name"]], meal=meal)
+        foodinstance = FoodInstance(amount = fidict["amount"], food=food_dict[fidict["food_id"]], meal=meal)
         foodinstance.save()
 
 
