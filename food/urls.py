@@ -13,6 +13,7 @@ urlpatterns = [
     path('accounts/<str:pk>/add_specialist', views.add_specialist, name='add_specialist'),
     path('accounts/<str:pk>/add_customer', views.add_customer, name='add_customer'),
     path('get_users/', views.get_users, name="user_profiles"),
+    path('get_specialists/', views.get_specialists, name="get_specialists"),
     path('load_data/', views.loadData, name='load_data'),
     path('load_ingredients_data/', views.loadIngredientsData, name='load_ingredients'),
     path('load_nutrients_data/', views.loadNutrientsData, name='load_nutrients'),

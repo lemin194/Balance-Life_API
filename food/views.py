@@ -101,6 +101,12 @@ def getRoutes(request):
             "description": 'Add specialist for user with the corresponding id.'
         },
         {
+            "Endpoint": "/get_specialists/",
+            "method": ["GET"],
+            "body": None,
+            "description": "Get all specialists."
+        },
+        {
             "Endpoint": "/load_data/",
             "method": ["GET"],
             "body": None,
@@ -155,6 +161,7 @@ def getRoutes(request):
             "Endpoint": "/foods/",
             "method": ["GET", "POST"],
             "body": {
+                "user_id": 1,
                 "show_details": False,
                 "show_total": False,
                 "search_input": "abc",
@@ -192,7 +199,6 @@ def getRoutes(request):
             "method": ["PUT"],
             "body": {
                 "food_name": "",
-                "user_id": 1,
                 "ingredient_set": [
                     {
                         "ingredient_name": "",
@@ -376,6 +382,13 @@ def get_users(request):
     search_input = data.setdefault('search_input', '')
     users = User.objects.filter(reduce(operator.or_, (Q(first_name__icontains=x) | Q(last_name__icontains=x) for x in search_input.strip().split(' '))))
     return Response(serialize_users(users))
+
+
+@api_view(["GET"])
+def get_specialists(request):
+    specialists = User.objects.filter(role="Specialist")
+    return Response(serialize_users(specialists))
+
 
 @api_view(["POST"])
 def uploadProfileImage(request, pk):
@@ -785,8 +798,12 @@ def getFoods(request):
     data = request.data
     search_input = data.setdefault('search_input', '')
 
-
-    foods = foods.filter(food_name__icontains=search_input)
+    user_id = data.setdefault('user_id', -1)
+    if not User.objects.filter(id=user_id).exists():
+        foods = foods.filter(food_name__icontains=search_input)
+    else:
+        user = User.objects.get(id = user_id)
+        foods = foods.filter(food_name__icontains=search_input, user=user)
 
     show_details = data.setdefault('show_details', False)
     show_total = data.setdefault('show_total', False)
