@@ -2,3 +2,13 @@
 
 .venv/
 .vscode/
+.idea/
+venv/
+balance/__pycache__/
+food/__pycache__/
+chat/__pycache__/
+balance/migrations/__pycache__/
+food/migrations/__pycache__/
+chat/migrations/__pycache__/
+db.sqlite3
+requirements.txt
