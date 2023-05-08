@@ -31,6 +31,8 @@ def serialize_user(user : User):
         'email': user.email,
         'date_joined': user.date_joined,
         'role': user.role,
+        'customer_id': user.customer_id,
+        'specialist_id': user.specialist_id
     }
     return ret
 
@@ -107,7 +109,7 @@ def get_ingredient_dict_by_id():
                 nutrient_name = nutrient_dict[n[2]].nutrient_name
                 rda = nutrient_dict[n[2]].rda
                 ingredient_dict_element["nutrient_set"][nutrient_name] = {
-                    "ammount": n[1], #amount
+                    "amount": n[1], #amount
                     "rda": rda
                 }
             ingredient_dict_by_id[ingredient.id] = ingredient_dict_element

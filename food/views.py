@@ -616,6 +616,7 @@ def serialize_food(food : Food):
     ret = {
         "id" : food.id,
         "food_name" : food.food_name,
+        "haha": "haha"
     }
     if (food.image):
         ret['image'] = food.image.url
@@ -674,13 +675,18 @@ def get_food_render_data(food, show_details=False, show_total=False):
         ingredient_name = ingredient_dict_element["ingredient_name"]
         iidict["ingredient_name"] = ingredient_name
         iidict["amount"] = iiamount
+        iidict["serving"] = ingredient_dict_element["serving"]
         for macronutrients in ["fat", "calories", "proteins", "carbohydrates"]:
             iidict[macronutrients] = float(ingredient_dict_element[macronutrients]) * float(iiamount) / 100
         iidict["nutrient_set"] = {}
         if (show_details):
             for nutrient_name in ingredient_dict_element["nutrient_set"]:
-                nutrient_amount = ingredient_dict_element["nutrient_set"][nutrient_name]["ammount"]
-                iidict["nutrient_set"][nutrient_name] = float(nutrient_amount) * float(iiamount) / 100
+                nutrient_amount = ingredient_dict_element["nutrient_set"][nutrient_name]["amount"]
+                nutrient_rda = ingredient_dict_element["nutrient_set"][nutrient_name]["rda"]
+                iidict["nutrient_set"][nutrient_name] = {
+                    "amount": float(nutrient_amount) * float(iiamount) / 100,
+                    "rda": nutrient_rda
+                }
         render_data["ingredient_set"].append(iidict)
     return render_data
 
@@ -772,10 +778,12 @@ def get_meals_render_data(meals, show_details=False, show_total=False):
                         total_nutrient_dict[macronutrients] += ingredient_dict[macronutrients]
                 ingredient_nutrient_set_dict = ingredient_dict['nutrient_set']
                 for nutrient_name in ingredient_nutrient_set_dict:
-                    ingredient_nutrient_set_dict[nutrient_name] = float(ingredient_nutrient_set_dict[nutrient_name]) * float(food_amount) / 100
+                    ingredient_nutrient_set_dict[nutrient_name]['amount'] = \
+                        float(ingredient_nutrient_set_dict[nutrient_name]['amount']) * float(food_amount) / 100
                     if (show_total):
-                        total_nutrient_set_dict[nutrient_name]['amount'] += float(ingredient_nutrient_set_dict[nutrient_name])
-                        total_nutrient_set_dict[nutrient_name]['percentage'] += float(ingredient_nutrient_set_dict[nutrient_name]) / float(rda_dict[nutrient_name]) * 10000
+                        total_nutrient_set_dict[nutrient_name]['rda'] = float(ingredient_nutrient_set_dict[nutrient_name]['rda'])
+                        total_nutrient_set_dict[nutrient_name]['amount'] += float(ingredient_nutrient_set_dict[nutrient_name]['amount'])
+                        total_nutrient_set_dict[nutrient_name]['percentage'] += float(ingredient_nutrient_set_dict[nutrient_name]['amount']) / float(rda_dict[nutrient_name]) * 10000
                 ingredient_dict['nutrient_set'] = ingredient_nutrient_set_dict
                 new_food_ingredient_set_dict.append(ingredient_dict)
             food_render_data['ingredient_set'] = new_food_ingredient_set_dict
