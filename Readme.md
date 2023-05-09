@@ -33,7 +33,7 @@ A simple foodtracking API, for school project.
 ```
     python manage.py migrate
 ```
-These lines will create MySQL tables. You can check with MySQL Workbench.
+These lines will create SQL tables. You can query the file "db.sqlite3".
 
 5. Run server
 ```
