@@ -107,6 +107,12 @@ def getRoutes(request):
             "description": "Get all specialists."
         },
         {
+            "Endpoint": "/get_normal_users/",
+            "method": ["GET"],
+            "body": None,
+            "description": "Get all normal users."
+        },
+        {
             "Endpoint": "/load_data/",
             "method": ["GET"],
             "body": None,
@@ -380,7 +386,10 @@ def user_profile_view(request):
 def get_users(request):
     data = request.data
     search_input = data.setdefault('search_input', '')
+    role = data.setdefault('role', '')
     users = User.objects.filter(reduce(operator.or_, (Q(first_name__icontains=x) | Q(last_name__icontains=x) for x in search_input.strip().split(' '))))
+    if role != '':
+        users.filter(role=role)
     return Response(serialize_users(users))
 
 
@@ -458,6 +467,7 @@ def loadSampleFoodsData(request):
     [
         {
             "food_name": "Egg fried rice",
+            "user_id": 1,
             "ingredient_set": [
                 {
                     "ingredient_name": "Egg",
@@ -479,6 +489,7 @@ def loadSampleFoodsData(request):
         },
         {
             "food_name": "Omelet",
+            "user_id": 1,
             "ingredient_set": [
                 {
                     "ingredient_name": "Butter",
@@ -492,6 +503,7 @@ def loadSampleFoodsData(request):
         },
         {
             "food_name": "Air Fryer Beef & Broccoli",
+            "user_id": 1,
             "ingredient_set": [
                 {
                     "ingredient_name": "Beef",
@@ -517,6 +529,7 @@ def loadSampleFoodsData(request):
         },
         {
             "food_name": "Beef Wellington",
+            "user_id": 1,
             "ingredient_set": [
                 {
                     "ingredient_name": "Beef",
@@ -538,6 +551,7 @@ def loadSampleFoodsData(request):
         },
         {
             "food_name": "Grandma's Apple Pie",
+            "user_id": 1,
             "ingredient_set": [
                 {
                     "ingredient_name": "Apples",
@@ -550,16 +564,13 @@ def loadSampleFoodsData(request):
             ]
         }
     ]
-    if (not User.objects.filter(id=2).exists()):
-        return HttpResponseBadRequest("Invalid user_id.")
-    user = User.objects.get(id=2)
     ingredient_dict = get_ingredient_object_dict_by_name()
     for fdata in sample_data:
         if (Food.objects.filter(food_name=fdata['food_name']).exists()):
             continue
         food = Food.objects.create(
             food_name=fdata['food_name'],
-            user=user
+            user=User.objects.get(id=fdata['user_id'])
         )
         for isdata in fdata['ingredient_set']:
             ii = IngredientInstance.objects.create(
