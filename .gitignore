@@ -1,5 +1,6 @@
 *.log
 
+media
 
 *.pyc
 __pycache__
