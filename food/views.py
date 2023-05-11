@@ -389,7 +389,7 @@ def get_users(request):
     role = data.setdefault('role', '')
     users = User.objects.filter(reduce(operator.or_, (Q(first_name__icontains=x) | Q(last_name__icontains=x) for x in search_input.strip().split(' '))))
     if role != '':
-        users.filter(role=role)
+        users = users.filter(role=role)
     return Response(serialize_users(users))
 
 
