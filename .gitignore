@@ -1,10 +1,13 @@
 *.log
 
+
+*.pyc
+__pycache__
+
 .venv/
 .vscode/
 .idea/
 venv/
-__pycache__/
-*_initial.py
+
 db.sqlite3
 requirements.txt
