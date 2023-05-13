@@ -32,7 +32,8 @@ def serialize_user(user : User):
         'date_joined': user.date_joined,
         'role': user.role,
         'customer_id': user.customer_id,
-        'specialist_id': user.specialist_id
+        'specialist_id': user.specialist_id,
+        'caption': user.caption,
     }
     return ret
 

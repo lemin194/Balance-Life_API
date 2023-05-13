@@ -26,6 +26,8 @@ class User(AbstractUser):
     customer_id = models.IntegerField(blank=True, null=True)
     specialist_id = models.IntegerField(blank=True, null=True)
 
+    caption = models.TextField(max_length=1000, blank=True)
+
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
 

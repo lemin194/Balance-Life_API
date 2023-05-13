@@ -85,6 +85,14 @@ def getRoutes(request):
             "description": 'Upload image for user with the corresponding id.'
         },
         {
+            "Endpoint": "accounts/profile/id/set_caption/",
+            "method": ["POST"],
+            "body": {
+                "caption": "",
+            },
+            "description": 'Set profile caption.'
+        },
+        {
             "Endpoint": "accounts/id/add_customer",
             "method": ["POST"],
             "body": {
@@ -420,6 +428,14 @@ def uploadProfileImage(request, pk):
     user.save()
     return Response({"message":"Uploaded image for %s." % user})
 
+
+@api_view(['POST'])
+def setProfileCaption(request, pk):
+    caption = data['caption']
+    user = User.objects.get(id=pk)
+    user.caption = caption
+    user.save()
+    return Response({"message": "Changed user %s's caption" % user.email})
 
 @api_view(['POST'])
 def add_specialist(request, pk):

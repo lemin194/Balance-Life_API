@@ -8,6 +8,7 @@ from rest_framework.authtoken import views as rest_view
 urlpatterns = [
     path('accounts/profile/', views.user_profile_view, name='user_profile'),
     path('accounts/profile/<str:pk>/upload_profile_image/', views.uploadProfileImage, name='upload_profile_image'),
+    path('accounts/profile/<str:pk>/set_caption/', views.setProfileCaption, name='set_caption'),
     path('accounts/register/', views.register_view, name='register'),
     path('accounts/login/', views.login_view, name="login"),
     path('accounts/<str:pk>/add_specialist', views.add_specialist, name='add_specialist'),
