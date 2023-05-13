@@ -109,6 +109,20 @@ def getRoutes(request):
             "description": 'Add specialist for user with the corresponding id.'
         },
         {
+            "Endpoint": "accounts/id/remove_customer",
+            "method": ["POST"],
+            "body": {
+            },
+            "description": 'Remove customer for user with the corresponding id.'
+        },
+        {
+            "Endpoint": "accounts/id/remove_specialist",
+            "method": ["POST"],
+            "body": {
+            },
+            "description": 'Remove specialist for user with the corresponding id.'
+        },
+        {
             "Endpoint": "/get_specialists/",
             "method": ["GET"],
             "body": None,
@@ -444,6 +458,9 @@ def add_specialist(request, pk):
     user = User.objects.get(id=pk)
     user.specialist_id = data["specialist_id"]
     user.save()
+    specialist = User.objects.get(id=data["specialist_id"])
+    specialist.customer_id = user.id
+    specialist.save()
     return Response({"message": "Added specialist for %s." % user})
 
 
@@ -454,8 +471,45 @@ def add_customer(request, pk):
     user = User.objects.get(id=pk)
     user.customer_id = data["customer_id"]
     user.save()
+    customer = User.objects.get(id=data["customer_id"])
+    customer.specialist_id = user.id
+    customer.save()
     return Response({"message": "Added customer for %s." % user})
 
+@api_view(['POST'])
+def remove_specialist(request, pk):
+
+    try:
+        user = User.objects.get(id=pk)
+        specialist = User.objects.get(id=user.specialist_id)
+
+        user.specialist_id = None
+        specialist.customer_id = None
+        
+        user.save()
+        specialist.save()
+    except:
+        pass
+    
+    return Response({"message": "Removed specialist for %s." % user})
+
+    
+@api_view(['POST'])
+def remove_customer(request, pk):
+
+    try:
+        user = User.objects.get(id=pk)
+        customer = User.objects.get(id=user.customer_id)
+
+        user.customer_id = None
+        customer.specialist_id = None
+        
+        user.save()
+        customer.save()
+    except:
+        pass
+    
+    return Response({"message": "Removed customer for %s." % user})
 
 @api_view(['GET'])
 def loadNutrientsData(request):
