@@ -1002,11 +1002,17 @@ def getIngredients(request):
     data = request.data
     show_details = data.setdefault('show_details', False)
     search_input = data.setdefault('search_input', '')
-    ingredients = ingredients.filter(ingredient_name__icontains=search_input)
+    ingredients = ingredients.filter(ingredient_name__startswith=search_input)
     page = data.setdefault('page', 1)
     pagesize = data.setdefault('pagesize', 10)
     page -= 1
     list_to_show = list(ingredients)[page * pagesize: (page + 1) * pagesize]
+    if search_input:
+        for i in list_to_show:
+            if i.ingredient_name.lower() == search_input:
+                list_to_show = [i]
+                break
+
     return Response(get_ingredients_render_data(list_to_show, show_details=show_details))
 
 
