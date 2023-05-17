@@ -329,11 +329,9 @@ def getRoutes(request):
             "Endpoint": "/meals/id/update/",
             "method": ["PUT"],
             "body": {
-                "title": "",
-                "time" : "",
                 "food_set": [
                     {
-                        "food_name": "",
+                        "food_id": "",
                         "amount": ""
                     }
                 ]
@@ -707,6 +705,7 @@ def serialize_meal(meal : Meal):
     ret = {
         "id" : meal.id,
         "title" : meal.title,
+        "date" : meal.date,
         "time" : meal.time,
         "user_id": meal.user.id
     }
@@ -796,13 +795,18 @@ def get_foods_render_data(foods, show_details=False, show_total=False):
             ingredient_name = ingredient_dict_element["ingredient_name"]
             iidict["ingredient_name"] = ingredient_name
             iidict["amount"] = iiamount
+            iidict["serving"] = ingredient_dict_element["serving"]
             for macronutrients in ["fat", "calories", "proteins", "carbohydrates"]:
                 iidict[macronutrients] = float(ingredient_dict_element[macronutrients]) * float(iiamount) / 100
             iidict["nutrient_set"] = {}
             if (show_details or show_total):
                 for nutrient_name in ingredient_dict_element["nutrient_set"]:
-                    nutrient_amount = ingredient_dict_element["nutrient_set"][nutrient_name]["ammount"]
-                    iidict["nutrient_set"][nutrient_name] = float(nutrient_amount) * float(iiamount) / 100
+                    nutrient_amount = ingredient_dict_element["nutrient_set"][nutrient_name]["amount"]
+                    nutrient_rda = ingredient_dict_element["nutrient_set"][nutrient_name]["rda"]
+                    iidict["nutrient_set"][nutrient_name] = {
+                        "amount": float(nutrient_amount) * float(iiamount) / 100,
+                        "rda": nutrient_rda
+                    }
             food_render_data["ingredient_set"].append(iidict)
         render_data.append(food_render_data)
 
@@ -1145,10 +1149,6 @@ def updateMeal(request, pk):
     meal = Meal.objects.get(id=pk)
 
     data = request.data
-
-    meal.title = data['title']
-    meal.time = data['time']
-    meal.date = datetime.strptime(data['date'], '%d-%m-%Y').date(),
 
     meal.foodinstance_set.all().delete()
     food_dict = get_food_dict_by_id()
